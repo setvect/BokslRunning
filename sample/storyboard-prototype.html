@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BokslRunning Storyboard Prototype</title>
+  <style>
+    :root {
+      --bg: #f4f7f1;
+      --card: #ffffff;
+      --ink: #15251e;
+      --sub: #4d5e56;
+      --line: #d8dfd8;
+      --primary: #1f7a53;
+      --primary-ink: #fff;
+      --secondary: #e8f0ea;
+      --warn: #ffe8c2;
+      --warn-ink: #6a4700;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: radial-gradient(circle at 20% 10%, #ffffff, var(--bg) 60%);
+      color: var(--ink);
+      font-family: "Pretendard", "Noto Sans KR", sans-serif;
+    }
+    .phone {
+      width: min(100%, 398px);
+      height: 830px;
+      border-radius: 28px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: 0 20px 56px rgba(22, 39, 30, 0.14);
+      overflow: hidden;
+      position: relative;
+    }
+    .top {
+      height: 76px;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 14px;
+      display: grid;
+      gap: 8px;
+      background: #fbfdfb;
+    }
+    .status {
+      font-size: 12px;
+      color: var(--sub);
+      display: flex;
+      justify-content: space-between;
+    }
+    .chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      border: 1px solid #c6d2c9;
+      background: #eef4ef;
+      color: #2e5240;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+    .screen {
+      display: none;
+      height: calc(100% - 76px);
+      padding: 16px;
+      overflow: auto;
+      gap: 12px;
+      flex-direction: column;
+    }
+    .screen.active { display: flex; }
+    .tag {
+      display: inline-flex;
+      width: fit-content;
+      font-size: 12px;
+      border: 1px solid #bfd1c3;
+      color: #2c573f;
+      background: #eaf4ed;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-weight: 600;
+    }
+    h1 { margin: 0; font-size: 24px; line-height: 1.25; }
+    h2 { margin: 0; font-size: 17px; }
+    p { margin: 0; color: var(--sub); line-height: 1.45; font-size: 14px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 13px;
+      background: #fcfdfc;
+      display: grid;
+      gap: 8px;
+    }
+    .home-summary {
+      border: 1px solid #20392e;
+      border-radius: 18px;
+      padding: 14px;
+      background: linear-gradient(135deg, #202725, #273e34 60%, #1f5a45);
+      color: #f7fbf8;
+      display: grid;
+      gap: 11px;
+    }
+    .home-summary h3 { margin: 0; font-size: 14px; color: #c8d6ce; font-weight: 600; }
+    .home-big { font-size: 34px; font-weight: 800; line-height: 1; }
+    .home-big small { font-size: 18px; margin-left: 4px; color: #d5e4db; }
+    .home-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .home-grid .cell {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 10px;
+      padding: 8px;
+      display: grid;
+      gap: 2px;
+    }
+    .home-grid .cell b { font-size: 17px; line-height: 1.15; }
+    .home-grid .cell span { font-size: 11px; color: #d0ded6; }
+    .map {
+      height: 170px;
+      border-radius: 12px;
+      border: 1px solid #cfd6cf;
+      background: linear-gradient(150deg, #d7eadf, #edf4ef);
+      display: grid;
+      place-items: center;
+      color: #2b4e3b;
+      font-weight: 700;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+    }
+    .metric b { display: block; font-size: 18px; margin-bottom: 2px; }
+    .metric span { font-size: 12px; color: var(--sub); }
+    .banner {
+      border: 1px solid #ffd491;
+      background: var(--warn);
+      color: var(--warn-ink);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 13px;
+      display: none;
+    }
+    .banner.show { display: block; }
+    .offline {
+      border: 1px dashed #6e8f7c;
+      border-radius: 12px;
+      padding: 9px 11px;
+      background: #eef8f2;
+      color: #28523c;
+      font-size: 13px;
+      display: none;
+    }
+    .offline.show { display: block; }
+    .actions { margin-top: auto; display: grid; gap: 9px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .inline-actions { display: grid; gap: 9px; }
+    button, select, input { width: 100%; border-radius: 12px; font-size: 14px; font-family: inherit; }
+    button { border: 0; padding: 12px; font-weight: 700; cursor: pointer; }
+    .btn-primary { background: var(--primary); color: var(--primary-ink); }
+    .btn-secondary { background: var(--secondary); color: var(--ink); }
+    .btn-danger { background: #f8e7e7; color: #6f1f1f; border: 1px solid #edc7c7; }
+    .list { display: grid; gap: 8px; }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px;
+      background: #fff;
+      display: grid;
+      gap: 4px;
+      text-align: left;
+    }
+    .chart-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+    .chart-title { font-size: 13px; font-weight: 700; color: #244635; }
+    .bars {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 6px;
+      align-items: end;
+      height: 96px;
+    }
+    .bar {
+      background: linear-gradient(180deg, #86c5a1, #2f835a);
+      border-radius: 6px 6px 3px 3px;
+      min-height: 6px;
+      position: relative;
+    }
+    .bar::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: var(--sub);
+    }
+    .mini { font-size: 12px; color: var(--sub); }
+    .title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .icon-btn {
+      width: auto;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #e7efe9;
+      border: 1px solid #cad7cf;
+      color: #294838;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .toast {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #fff;
+      background: rgba(18, 33, 24, 0.92);
+      font-size: 13px;
+      display: none;
+    }
+    .toast.show { display: block; }
+    label { display: grid; gap: 6px; font-size: 13px; }
+    input, select { border: 1px solid var(--line); padding: 10px; background: #fff; }
+  </style>
+</head>
+<body>
+  <main class="phone">
+    <header class="top">
+      <div class="status"><span>9:41</span><span>BokslRunning Prototype</span></div>
+      <div class="chips">
+        <span id="chip-perm" class="chip">권한: 미허용</span>
+        <span id="chip-net" class="chip">네트워크: 온라인</span>
+        <span id="chip-run" class="chip">러닝: 대기</span>
+      </div>
+    </header>
+
+    <section id="onboarding" class="screen active">
+      <span class="tag">S1-1 온보딩</span>
+      <h1>복슬달리기</h1>
+      <div class="card"><p>러닝 경로/시간/페이스를 기록합니다.</p></div>
+      <div class="actions"><button class="btn-primary" data-nav="profile">시작하기</button></div>
+    </section>
+
+    <section id="profile" class="screen">
+      <span class="tag">S1-2 프로필 입력</span>
+      <h2>몸무게, 성별, 나이 입력</h2>
+      <div class="card">
+        <label>몸무게(kg)<input type="number" placeholder="68" /></label>
+        <label>성별
+          <select><option>선택</option><option>남성</option><option>여성</option><option>기타</option></select>
+        </label>
+        <label>나이<input type="number" placeholder="32" /></label>
+      </div>
+      <div class="actions"><button class="btn-primary" data-nav="permission">저장</button></div>
+    </section>
+
+    <section id="permission" class="screen">
+      <span class="tag">S1-3 위치 권한 요청</span>
+      <h2>경로 기록을 위해 위치 권한이 필요해요</h2>
+      <div class="actions">
+        <button id="permit-allow" class="btn-primary">허용</button>
+        <button id="permit-later" class="btn-secondary">나중에</button>
+      </div>
+    </section>
+
+    <section id="home" class="screen">
+      <span class="tag">홈</span>
+      <div class="title-row">
+        <h2>오늘도 달려볼까요?</h2>
+        <button class="icon-btn" data-nav="settings">설정</button>
+      </div>
+      <div class="card"><p id="home-msg">상태 메시지</p></div>
+      <div class="home-summary">
+        <h3>누적 러닝 요약</h3>
+        <div class="home-big"><span id="home-total-distance">0.0</span><small>km</small></div>
+        <div class="home-grid">
+          <div class="cell"><b id="home-total-time">0분</b><span>달린 시간</span></div>
+          <div class="cell"><b id="home-total-speed">0.0 km/h</b><span>평균 속도</span></div>
+          <div class="cell"><b id="home-total-kcal">0 kcal</b><span>소모 칼로리</span></div>
+        </div>
+      </div>
+      <div class="row">
+        <button id="start-run" class="btn-primary">러닝 시작</button>
+        <button class="btn-secondary" data-nav="records">기록</button>
+      </div>
+      <div class="inline-actions">
+        <button class="btn-secondary" data-nav="stats">통계</button>
+      </div>
+      <p class="mini">권한이 없으면 러닝 시작 시 권한 안내 화면으로 이동합니다.</p>
+    </section>
+
+    <section id="settings" class="screen">
+      <span class="tag">설정</span>
+      <h2>설정 메뉴</h2>
+      <div class="card"><p>프로필 및 데이터 내보내기 기능을 관리합니다.</p></div>
+      <div class="actions">
+        <button class="btn-primary" data-nav="profile">프로필 정보 수정</button>
+        <button class="btn-secondary" data-nav="export-start">전체 내보내기</button>
+        <button class="btn-secondary" data-nav="import-start">가져오기</button>
+        <button class="btn-secondary" data-nav="home">홈</button>
+      </div>
+    </section>
+
+    <section id="permission-blocked" class="screen">
+      <span class="tag">S2-1 권한 안내</span>
+      <h2>위치 권한이 없으면 경로를 기록할 수 없어요</h2>
+      <div class="actions">
+        <button id="open-setting" class="btn-primary">설정 열기</button>
+        <button class="btn-secondary" data-nav="home">취소</button>
+      </div>
+    </section>
+
+    <section id="ready" class="screen">
+      <span class="tag">S3-1 Ready</span>
+      <div id="offline-ready" class="offline">오프라인: 지도 배경은 제한될 수 있어요.</div>
+      <div class="map">지도 (현재 위치 점)</div>
+      <div class="row">
+        <button id="run-go" class="btn-primary">시작</button>
+        <button class="btn-secondary" data-nav="home">취소</button>
+      </div>
+    </section>
+
+    <section id="running" class="screen">
+      <span class="tag">S4-1 러닝 라이브</span>
+      <div id="offline-running" class="offline">오프라인: 기록은 저장되고, 지도 배경은 제한될 수 있어요.</div>
+      <div class="map">지도 + 경로 폴리라인</div>
+      <div class="metrics">
+        <div class="metric"><b id="m-time">00:00</b><span>러닝 시간</span></div>
+        <div class="metric"><b id="m-distance">0.00 km</b><span>거리</span></div>
+        <div class="metric"><b id="m-pace">--'--"</b><span>현재 페이스</span></div>
+        <div class="metric"><b id="m-avg">--'--"</b><span>평균 페이스</span></div>
+        <div class="metric"><b id="m-max">0.0 km/h</b><span>최고 속도</span></div>
+        <div class="metric"><b id="m-cal">0 kcal</b><span>칼로리(추정)</span></div>
+      </div>
+      <div class="row">
+        <button id="interrupt-now" class="btn-secondary">중단 시뮬레이션</button>
+      </div>
+      <div class="actions"><button class="btn-danger" data-nav="end-confirm">종료</button></div>
+    </section>
+
+    <section id="end-confirm" class="screen">
+      <span class="tag">S6-1 종료 확인</span>
+      <h2>러닝을 종료하고 저장할까요?</h2>
+      <div class="actions">
+        <button id="save-run" class="btn-primary">저장</button>
+        <button class="btn-secondary" data-nav="running">취소</button>
+      </div>
+    </section>
+
+    <section id="summary" class="screen">
+      <span class="tag">S6-2 결과 요약</span>
+      <div class="card">
+        <h2>이번 러닝 결과</h2>
+        <p id="summary-text">총 거리/총 시간/평균 페이스/최고 속도/칼로리</p>
+      </div>
+      <div class="map">전체 경로</div>
+      <div class="actions"><button class="btn-primary" data-nav="records">완료</button></div>
+    </section>
+
+    <section id="resume" class="screen">
+      <span class="tag">S8-1 이어서 기록 안내</span>
+      <h2>진행 중이던 러닝이 있어요.</h2>
+      <p>마지막 저장 지점부터 이어서 기록할까요?</p>
+      <div class="card"><p>앱이 꺼져 있던 시간/이동 구간은 기록되지 않을 수 있어요.</p></div>
+      <div class="actions">
+        <button id="resume-yes" class="btn-primary">이어하기</button>
+        <button id="resume-drop" class="btn-secondary">폐기</button>
+      </div>
+    </section>
+
+    <section id="records" class="screen">
+      <span class="tag">S9-1 기록 목록</span>
+      <h2>러닝 기록</h2>
+      <div id="record-list" class="list"></div>
+      <div class="actions"><button class="btn-secondary" data-nav="home">홈</button></div>
+    </section>
+
+    <section id="record-detail" class="screen">
+      <span class="tag">S9-2 기록 상세</span>
+      <div class="map">기록 경로</div>
+      <div class="card"><p id="detail-text">요약 수치</p></div>
+      <div class="actions"><button class="btn-secondary" data-nav="records">목록으로</button></div>
+    </section>
+
+    <section id="stats" class="screen">
+      <span class="tag">S10-1 통계</span>
+      <div class="card">
+        <p>전체 기록 기준 요약</p>
+        <p class="mini">과거부터 최근 순서의 월별 차트를 제공합니다.</p>
+      </div>
+      <div class="metrics">
+        <div class="metric"><b id="st-distance">0.0 km</b><span>지금까지 총 달린 거리</span></div>
+        <div class="metric"><b id="st-time">0분</b><span>지금까지 달린 시간</span></div>
+        <div class="metric"><b id="st-speed">0.0 km/h</b><span>지금까지 평균 속도</span></div>
+      </div>
+      <div class="chart-card"><span class="chart-title">월별 총 달린 거리</span><div id="chart-distance" class="bars"></div></div>
+      <div class="chart-card"><span class="chart-title">월별 달린 시간</span><div id="chart-time" class="bars"></div></div>
+      <div class="chart-card"><span class="chart-title">월별 평균 속도</span><div id="chart-speed" class="bars"></div></div>
+      <div class="actions"><button class="btn-secondary" data-nav="home">홈</button></div>
+    </section>
+
+    <section id="export-start" class="screen">
+      <span class="tag">S11-1 내보내기</span>
+      <h2>전체 데이터 내보내기</h2>
+      <div class="card">
+        <p>모든 러닝 기록을 파일로 생성합니다.</p>
+        <p class="mini">형식: bokslrunning_export_v1.json</p>
+      </div>
+      <div class="actions">
+        <button id="export-go" class="btn-primary">내보내기 시작</button>
+        <button class="btn-secondary" data-nav="home">취소</button>
+      </div>
+    </section>
+
+    <section id="export-progress" class="screen">
+      <span class="tag">S11-2 진행 상태</span>
+      <div class="card"><h2 id="export-msg">0개 중 0개 생성 중…</h2></div>
+      <div class="actions"><button id="export-cancel" class="btn-secondary">취소</button></div>
+    </section>
+
+    <section id="export-done" class="screen">
+      <span class="tag">S11-3 완료</span>
+      <h2>내보내기 완료</h2>
+      <div class="card"><p>파일 1개를 공유/저장할 수 있어요.</p></div>
+      <div class="actions">
+        <button id="share-file" class="btn-primary">파일 공유/저장</button>
+        <button class="btn-secondary" data-nav="home">홈</button>
+      </div>
+    </section>
+
+    <section id="import-start" class="screen">
+      <span class="tag">S12-1 가져오기</span>
+      <h2>데이터 가져오기</h2>
+      <div class="card">
+        <p>가져오기 전에 현재 데이터를 내부 백업합니다.</p>
+        <p class="mini">정책: 기존 데이터 유지 + 가져온 데이터 병합</p>
+      </div>
+      <div class="actions">
+        <button id="import-go" class="btn-primary">가져오기 시작</button>
+        <button class="btn-secondary" data-nav="settings">취소</button>
+      </div>
+    </section>
+
+    <section id="import-progress" class="screen">
+      <span class="tag">S12-2 진행 상태</span>
+      <div class="card"><h2 id="import-msg">1/2 내부 백업 중…</h2></div>
+      <div class="actions"><button id="import-cancel" class="btn-secondary">취소</button></div>
+    </section>
+
+    <section id="import-done" class="screen">
+      <span class="tag">S12-3 완료</span>
+      <h2>가져오기 완료</h2>
+      <div class="card">
+        <p id="import-result">추가 0건, 중복 0건</p>
+      </div>
+      <div class="actions">
+        <button class="btn-primary" data-nav="records">확인</button>
+        <button class="btn-secondary" data-nav="home">홈</button>
+      </div>
+    </section>
+
+    <div id="toast" class="toast"></div>
+  </main>
+
+  <script>
+    const screens = [...document.querySelectorAll(".screen")];
+    const toastEl = document.getElementById("toast");
+    const chipPerm = document.getElementById("chip-perm");
+    const chipNet = document.getElementById("chip-net");
+    const chipRun = document.getElementById("chip-run");
+    const homeMsg = document.getElementById("home-msg");
+    const offlineReady = document.getElementById("offline-ready");
+    const offlineRunning = document.getElementById("offline-running");
+    const recordList = document.getElementById("record-list");
+    const detailText = document.getElementById("detail-text");
+    const summaryText = document.getElementById("summary-text");
+    const exportMsg = document.getElementById("export-msg");
+    const importMsg = document.getElementById("import-msg");
+    const importResult = document.getElementById("import-result");
+    const homeTotalDistance = document.getElementById("home-total-distance");
+    const homeTotalTime = document.getElementById("home-total-time");
+    const homeTotalSpeed = document.getElementById("home-total-speed");
+    const homeTotalKcal = document.getElementById("home-total-kcal");
+
+    let permissionGranted = false;
+    let isOffline = false;
+    let isRunning = false;
+    let hasInterruptedSession = false;
+    let currentRecord = null;
+    let runningTimer = null;
+    let exportTimer = null;
+    let importTimer = null;
+    let recordSeq = 7;
+
+    let records = [
+      { id: 1, date: "2025-10-12", distance: 6.4, mins: 38, avgPace: "5'56\"", max: "11.5", kcal: 390 },
+      { id: 2, date: "2025-11-07", distance: 4.3, mins: 27, avgPace: "6'16\"", max: "10.4", kcal: 255 },
+      { id: 3, date: "2025-12-03", distance: 7.8, mins: 46, avgPace: "5'54\"", max: "11.9", kcal: 470 },
+      { id: 4, date: "2026-01-18", distance: 5.0, mins: 31, avgPace: "6'12\"", max: "10.8", kcal: 305 },
+      { id: 5, date: "2026-02-25", distance: 5.2, mins: 31, avgPace: "5'58\"", max: "11.1", kcal: 320 },
+      { id: 6, date: "2026-02-27", distance: 3.1, mins: 19, avgPace: "6'08\"", max: "10.2", kcal: 181 }
+    ];
+
+    function nav(id) {
+      screens.forEach((s) => s.classList.toggle("active", s.id === id));
+      if (id === "records") renderRecords();
+      if (id === "stats") renderStats();
+    }
+
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      setTimeout(() => toastEl.classList.remove("show"), 1600);
+    }
+
+    function updateChips() {
+      chipPerm.textContent = permissionGranted ? "권한: 허용" : "권한: 미허용";
+      chipNet.textContent = isOffline ? "네트워크: 오프라인" : "네트워크: 온라인";
+      chipRun.textContent = isRunning ? "러닝: 진행중" : "러닝: 대기";
+      homeMsg.textContent = permissionGranted
+        ? "권한 승인 완료. 바로 러닝을 시작할 수 있어요."
+        : "권한 미허용 상태예요. 러닝 시작 시 권한 필요 안내가 표시됩니다.";
+      offlineReady.classList.toggle("show", isOffline);
+      offlineRunning.classList.toggle("show", isOffline);
+    }
+
+    function formatTime(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, "0");
+      const s = String(sec % 60).padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function startRunning() {
+      isRunning = true;
+      currentRecord = { sec: 0, distance: 0, max: 0, kcal: 0 };
+      updateRunningUi();
+      clearInterval(runningTimer);
+      runningTimer = setInterval(() => {
+        if (!isRunning || !currentRecord) return;
+        currentRecord.sec += 1;
+        currentRecord.distance += 0.0044;
+        const speed = 8.5 + Math.random() * 3.3;
+        if (speed > currentRecord.max) currentRecord.max = speed;
+        currentRecord.kcal += 0.85;
+        updateRunningUi();
+      }, 1000);
+      updateChips();
+      nav("running");
+    }
+
+    function updateRunningUi() {
+      if (!currentRecord) return;
+      document.getElementById("m-time").textContent = formatTime(currentRecord.sec);
+      document.getElementById("m-distance").textContent = `${currentRecord.distance.toFixed(2)} km`;
+      document.getElementById("m-max").textContent = `${currentRecord.max.toFixed(1)} km/h`;
+      document.getElementById("m-cal").textContent = `${Math.round(currentRecord.kcal)} kcal`;
+
+      if (currentRecord.distance > 0.01) {
+        const pace = (currentRecord.sec / 60) / currentRecord.distance;
+        const pm = Math.floor(pace);
+        const ps = Math.round((pace - pm) * 60);
+        const paceText = `${pm}'${String(ps).padStart(2, "0")}"`;
+        document.getElementById("m-pace").textContent = paceText;
+        document.getElementById("m-avg").textContent = paceText;
+      }
+    }
+
+    function saveCurrentRecord() {
+      if (!currentRecord) return;
+      const mins = Math.max(1, Math.round(currentRecord.sec / 60));
+      const pace = currentRecord.distance > 0 ? (currentRecord.sec / 60) / currentRecord.distance : 0;
+      const pm = Math.floor(pace || 0);
+      const ps = Math.round(((pace || 0) - pm) * 60);
+
+      const rec = {
+        id: recordSeq++,
+        date: "2026-02-28",
+        distance: Number(currentRecord.distance.toFixed(2)),
+        mins,
+        avgPace: `${pm}'${String(ps).padStart(2, "0")}"`,
+        max: currentRecord.max.toFixed(1),
+        kcal: Math.round(currentRecord.kcal)
+      };
+      records.unshift(rec);
+      summaryText.textContent = `총 거리 ${rec.distance}km · 총 시간 ${rec.mins}분 · 평균 페이스 ${rec.avgPace} · 최고 속도 ${rec.max}km/h · ${rec.kcal}kcal`;
+      isRunning = false;
+      hasInterruptedSession = false;
+      clearInterval(runningTimer);
+      currentRecord = null;
+      updateChips();
+      renderHomeSummary();
+      if (document.getElementById("stats").classList.contains("active")) renderStats();
+    }
+
+    function renderRecords() {
+      recordList.innerHTML = "";
+      records.forEach((r) => {
+        const item = document.createElement("button");
+        item.className = "item";
+        item.innerHTML = `<b>${r.date}</b><span>${r.distance}km · ${r.mins}분 · 평균 ${r.avgPace}</span>`;
+        item.onclick = () => {
+          detailText.textContent = `거리 ${r.distance}km · 시간 ${r.mins}분 · 평균 ${r.avgPace} · 최고 ${r.max}km/h · ${r.kcal}kcal`;
+          nav("record-detail");
+        };
+        recordList.appendChild(item);
+      });
+    }
+
+    function monthKey(dateText) { return dateText.slice(0, 7); }
+
+    function buildMonthlySeries() {
+      const byMonth = new Map();
+      records.forEach((r) => {
+        const key = monthKey(r.date);
+        if (!byMonth.has(key)) byMonth.set(key, { month: key, distance: 0, mins: 0 });
+        const target = byMonth.get(key);
+        target.distance += r.distance;
+        target.mins += r.mins;
+      });
+      return [...byMonth.values()]
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .map((m) => ({ ...m, avgSpeed: m.mins > 0 ? m.distance / (m.mins / 60) : 0 }));
+    }
+
+    function renderBars(containerId, data, valueKey) {
+      const root = document.getElementById(containerId);
+      root.innerHTML = "";
+      if (!data.length) return;
+      const last6 = data.slice(-6);
+      const max = Math.max(...last6.map((d) => d[valueKey]), 1);
+      last6.forEach((d) => {
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        bar.style.height = `${Math.max(8, (d[valueKey] / max) * 96)}px`;
+        bar.dataset.label = d.month.slice(5);
+        root.appendChild(bar);
+      });
+    }
+
+    function renderStats() {
+      const series = buildMonthlySeries();
+      const totalDistance = series.reduce((acc, m) => acc + m.distance, 0);
+      const totalMins = series.reduce((acc, m) => acc + m.mins, 0);
+      const totalAvgSpeed = totalMins > 0 ? totalDistance / (totalMins / 60) : 0;
+
+      document.getElementById("st-distance").textContent = `${totalDistance.toFixed(1)} km`;
+      document.getElementById("st-time").textContent = `${Math.round(totalMins)}분`;
+      document.getElementById("st-speed").textContent = `${totalAvgSpeed.toFixed(1)} km/h`;
+
+      renderBars("chart-distance", series, "distance");
+      renderBars("chart-time", series, "mins");
+      renderBars("chart-speed", series, "avgSpeed");
+    }
+
+    function renderHomeSummary() {
+      const totalDistance = records.reduce((acc, r) => acc + r.distance, 0);
+      const totalMins = records.reduce((acc, r) => acc + r.mins, 0);
+      const totalKcal = records.reduce((acc, r) => acc + r.kcal, 0);
+      const avgSpeed = totalMins > 0 ? totalDistance / (totalMins / 60) : 0;
+      homeTotalDistance.textContent = totalDistance.toFixed(1);
+      homeTotalTime.textContent = `${Math.round(totalMins)}분`;
+      homeTotalSpeed.textContent = `${avgSpeed.toFixed(1)} km/h`;
+      homeTotalKcal.textContent = `${Math.round(totalKcal)} kcal`;
+    }
+
+    function stopExportTimer() {
+      clearInterval(exportTimer);
+      exportTimer = null;
+    }
+
+    function stopImportTimer() {
+      clearInterval(importTimer);
+      importTimer = null;
+    }
+
+    document.body.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+
+      if (btn.dataset.nav) {
+        nav(btn.dataset.nav);
+        return;
+      }
+
+      switch (btn.id) {
+        case "permit-allow":
+          permissionGranted = true;
+          updateChips();
+          nav("home");
+          break;
+        case "permit-later":
+          permissionGranted = false;
+          updateChips();
+          nav("home");
+          break;
+        case "start-run":
+          if (!permissionGranted) nav("permission-blocked");
+          else nav("ready");
+          break;
+        case "open-setting":
+          permissionGranted = true;
+          updateChips();
+          showToast("설정에서 권한을 허용했다고 가정합니다.");
+          nav("home");
+          break;
+        case "run-go":
+          startRunning();
+          break;
+        case "save-run":
+          saveCurrentRecord();
+          nav("summary");
+          break;
+        case "interrupt-now":
+          hasInterruptedSession = true;
+          isRunning = false;
+          clearInterval(runningTimer);
+          updateChips();
+          nav("resume");
+          break;
+        case "resume-yes":
+          if (!hasInterruptedSession) {
+            showToast("이어갈 세션이 없어요.");
+            nav("home");
+            return;
+          }
+          isRunning = true;
+          updateChips();
+          showToast("마지막 저장 지점부터 이어서 기록합니다.");
+          nav("running");
+          break;
+        case "resume-drop":
+          if (currentRecord) saveCurrentRecord();
+          showToast("해당 세션을 종료 처리했습니다.");
+          nav("records");
+          break;
+        case "export-go": {
+          let done = 0;
+          const total = Math.max(1, records.length);
+          exportMsg.textContent = `${total}개 중 ${done}개 생성 중…`;
+          nav("export-progress");
+          stopExportTimer();
+          exportTimer = setInterval(() => {
+            done += 1;
+            exportMsg.textContent = `${total}개 중 ${Math.min(done, total)}개 생성 중…`;
+            if (done >= total) {
+              stopExportTimer();
+              nav("export-done");
+            }
+          }, 650);
+          break;
+        }
+        case "export-cancel":
+          stopExportTimer();
+          nav("export-start");
+          break;
+        case "share-file":
+          showToast("bokslrunning_export_v1.json 공유 시트를 열었다고 가정합니다.");
+          break;
+        case "import-go": {
+          nav("import-progress");
+          stopImportTimer();
+          let step = 1;
+          importMsg.textContent = "1/2 내부 백업 중…";
+          importTimer = setInterval(() => {
+            if (step === 1) {
+              step = 2;
+              importMsg.textContent = "2/2 데이터 병합 중…";
+              return;
+            }
+            stopImportTimer();
+            const added = 2;
+            const duplicated = 1;
+            importResult.textContent = `추가 ${added}건, 중복 ${duplicated}건`;
+            showToast("내부 백업 후 병합을 완료했습니다.");
+            nav("import-done");
+          }, 850);
+          break;
+        }
+        case "import-cancel":
+          stopImportTimer();
+          nav("import-start");
+          break;
+        default:
+          break;
+      }
+    });
+
+    updateChips();
+    renderRecords();
+    renderHomeSummary();
+  </script>
+</body>
+</html>
