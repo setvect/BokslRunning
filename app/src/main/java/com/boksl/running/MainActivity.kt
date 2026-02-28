@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    HelloWorldScreen()
+                    helloWorldScreen()
                 }
             }
         }
@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun HelloWorldScreen() {
+private fun helloWorldScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text = "Hello BokslRunning")
     }
@@ -35,8 +35,8 @@ private fun HelloWorldScreen() {
 
 @Preview(showBackground = true)
 @Composable
-private fun PreviewHelloWorld() {
+private fun previewHelloWorld() {
     MaterialTheme {
-        HelloWorldScreen()
+        helloWorldScreen()
     }
 }
