@@ -26,7 +26,7 @@
 
 ## 4. 단계별 구현 순서
 
-- [ ] **Phase 0. 프로젝트 골격 구성**
+- [x] **Phase 0. 프로젝트 골격 구성**
 
 - 목표: 이후 기능 개발이 가능한 최소 실행 구조를 만든다.
 - 주요 작업:
@@ -36,6 +36,9 @@
 - 산출물:
   - 앱 실행 가능한 기본 화면(빈 홈)
   - DI 진입점/Hilt Application 세팅
+- 완료 내역 (2026-02-28):
+  - Hilt/Navigation/Room/DataStore/Coroutines 의존성 및 플러그인 구성 완료
+  - `ui/domain/data/core` 패키지 골격 + `home/settings/history/stats` 라우트 placeholder 연결 완료
 
 - [ ] **Phase 1. 도메인/저장소 기반 확정**
 
