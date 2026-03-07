@@ -18,7 +18,7 @@ fun historyScreen(onNavigateUp: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "History") },
+                title = { Text(text = "기록") },
                 navigationIcon = {
                     TextButton(onClick = onNavigateUp) {
                         Text(text = "뒤로")
@@ -34,7 +34,7 @@ fun historyScreen(onNavigateUp: () -> Unit) {
                     .padding(innerPadding),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = "History Placeholder")
+            Text(text = "기록 화면은 Phase 5에서 구현됩니다.")
         }
     }
 }

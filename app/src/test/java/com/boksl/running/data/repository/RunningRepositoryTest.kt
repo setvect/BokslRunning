@@ -178,4 +178,69 @@ class RunningRepositoryTest {
             assertNull(repository.getSession(sessionId))
             assertTrue(repository.observeTrackPoints(sessionId).first().isEmpty())
         }
+
+    @Test
+    fun observeHomeSummaryCalculatesTotalsAndAverageSpeed() =
+        runTest {
+            repository.insertSession(
+                RunningSession(
+                    externalId = "saved-1",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 1_000L,
+                    endedAtEpochMillis = 601_000L,
+                    stats =
+                        RunStats(
+                            durationMillis = 600_000L,
+                            distanceMeters = 2_000.0,
+                            averagePaceSecPerKm = 300.0,
+                            maxSpeedMps = 5.0,
+                            calorieKcal = 120.0,
+                        ),
+                    createdAtEpochMillis = 1_000L,
+                    updatedAtEpochMillis = 601_000L,
+                ),
+            )
+            repository.insertSession(
+                RunningSession(
+                    externalId = "saved-2",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 2_000L,
+                    endedAtEpochMillis = 302_000L,
+                    stats =
+                        RunStats(
+                            durationMillis = 300_000L,
+                            distanceMeters = 1_000.0,
+                            averagePaceSecPerKm = 300.0,
+                            maxSpeedMps = 4.0,
+                            calorieKcal = null,
+                        ),
+                    createdAtEpochMillis = 2_000L,
+                    updatedAtEpochMillis = 302_000L,
+                ),
+            )
+            repository.insertSession(
+                RunningSession(
+                    externalId = "discarded",
+                    status = SessionStatus.DISCARDED,
+                    startedAtEpochMillis = 3_000L,
+                    endedAtEpochMillis = 603_000L,
+                    stats =
+                        RunStats(
+                            durationMillis = 600_000L,
+                            distanceMeters = 5_000.0,
+                            averagePaceSecPerKm = 120.0,
+                            maxSpeedMps = 8.0,
+                            calorieKcal = 500.0,
+                        ),
+                    createdAtEpochMillis = 3_000L,
+                    updatedAtEpochMillis = 603_000L,
+                ),
+            )
+
+            val summary = repository.observeHomeSummary().first()
+            assertEquals(3_000.0, summary.totalDistanceMeters, 0.0)
+            assertEquals(900_000L, summary.totalDurationMillis)
+            assertEquals(3.3333333333333335, summary.averageSpeedMps, 0.000001)
+            assertEquals(120.0, summary.totalCaloriesKcal, 0.0)
+        }
 }

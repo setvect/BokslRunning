@@ -1,10 +1,13 @@
 package com.boksl.running.domain.repository
 
+import com.boksl.running.domain.model.HomeSummary
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.TrackPoint
 import kotlinx.coroutines.flow.Flow
 
 interface RunningRepository {
+    fun observeHomeSummary(): Flow<HomeSummary>
+
     fun observeSession(sessionId: Long): Flow<RunningSession?>
 
     fun observeRecentSessions(limit: Int = 50): Flow<List<RunningSession>>

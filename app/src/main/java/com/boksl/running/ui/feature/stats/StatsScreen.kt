@@ -18,7 +18,7 @@ fun statsScreen(onNavigateUp: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Stats") },
+                title = { Text(text = "통계") },
                 navigationIcon = {
                     TextButton(onClick = onNavigateUp) {
                         Text(text = "뒤로")
@@ -34,7 +34,7 @@ fun statsScreen(onNavigateUp: () -> Unit) {
                     .padding(innerPadding),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = "Stats Placeholder")
+            Text(text = "통계 화면은 Phase 6에서 구현됩니다.")
         }
     }
 }

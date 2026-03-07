@@ -11,6 +11,18 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RunningSessionDao {
+    @Query(
+        """
+        SELECT
+            SUM(distance_meters) AS totalDistanceMeters,
+            SUM(duration_millis) AS totalDurationMillis,
+            SUM(calorie_kcal) AS totalCaloriesKcal
+        FROM running_sessions
+        WHERE status = :status
+        """,
+    )
+    fun observeHomeSummary(status: SessionStatus = SessionStatus.SAVED): Flow<HomeSummaryProjection?>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: RunningSessionEntity): Long
 

@@ -12,6 +12,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -130,6 +131,59 @@ class RunningSessionDaoTest {
 
             val recent = runningSessionDao.observeRecent(limit = 2).first()
             assertEquals(listOf("session-b", "session-c"), recent.map { it.externalId })
+        }
+
+    @Test
+    fun observeHomeSummaryAggregatesSavedSessionsOnly() =
+        runTest {
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-1",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 1_000L,
+                ).copy(
+                    durationMillis = 600_000L,
+                    distanceMeters = 2_000.0,
+                    calorieKcal = 150.0,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-2",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 2_000L,
+                ).copy(
+                    durationMillis = 300_000L,
+                    distanceMeters = 1_000.0,
+                    calorieKcal = null,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "discarded",
+                    status = SessionStatus.DISCARDED,
+                    startedAtEpochMillis = 3_000L,
+                ).copy(
+                    durationMillis = 900_000L,
+                    distanceMeters = 5_000.0,
+                    calorieKcal = 400.0,
+                ),
+            )
+
+            val summary = runningSessionDao.observeHomeSummary().first()
+            assertNotNull(summary)
+            assertEquals(3_000.0, summary?.totalDistanceMeters ?: 0.0, 0.0)
+            assertEquals(900_000L, summary?.totalDurationMillis ?: 0L)
+            assertEquals(150.0, summary?.totalCaloriesKcal ?: 0.0, 0.0)
+        }
+
+    @Test
+    fun observeHomeSummaryReturnsZerosWhenNoSavedSession() =
+        runTest {
+            val summary = runningSessionDao.observeHomeSummary().first()
+            assertTrue(summary?.totalDistanceMeters == null || summary.totalDistanceMeters == 0.0)
+            assertTrue(summary?.totalDurationMillis == null || summary.totalDurationMillis == 0L)
+            assertTrue(summary?.totalCaloriesKcal == null || summary.totalCaloriesKcal == 0.0)
         }
 
     private fun runningSessionEntity(

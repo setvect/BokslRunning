@@ -1,10 +1,12 @@
 package com.boksl.running.data.repository
 
 import com.boksl.running.core.di.IoDispatcher
+import com.boksl.running.data.local.db.dao.HomeSummaryProjection
 import com.boksl.running.data.local.db.dao.RunningSessionDao
 import com.boksl.running.data.local.db.dao.TrackPointDao
 import com.boksl.running.data.mapper.toDomain
 import com.boksl.running.data.mapper.toEntity
+import com.boksl.running.domain.model.HomeSummary
 import com.boksl.running.domain.model.RunStats
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.SessionStatus
@@ -28,6 +30,12 @@ class DefaultRunningRepository
         private val trackPointDao: TrackPointDao,
         @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : RunningRepository {
+        override fun observeHomeSummary(): Flow<HomeSummary> =
+            runningSessionDao
+                .observeHomeSummary()
+                .map { projection -> projection.toHomeSummary() }
+                .flowOn(ioDispatcher)
+
         override fun observeSession(sessionId: Long): Flow<RunningSession?> =
             runningSessionDao
                 .observeById(sessionId)
@@ -156,4 +164,23 @@ private fun validateSessionTimestamps(
             "endedAtEpochMillis must be greater than or equal to startedAtEpochMillis."
         }
     }
+}
+
+private fun HomeSummaryProjection?.toHomeSummary(): HomeSummary {
+    val totalDistanceMeters = this?.totalDistanceMeters ?: 0.0
+    val totalDurationMillis = this?.totalDurationMillis ?: 0L
+    val totalCaloriesKcal = this?.totalCaloriesKcal ?: 0.0
+    val averageSpeedMps =
+        if (totalDurationMillis > 0L) {
+            totalDistanceMeters / (totalDurationMillis / 1_000.0)
+        } else {
+            0.0
+        }
+
+    return HomeSummary(
+        totalDistanceMeters = totalDistanceMeters,
+        totalDurationMillis = totalDurationMillis,
+        averageSpeedMps = averageSpeedMps,
+        totalCaloriesKcal = totalCaloriesKcal,
+    )
 }
