@@ -2,12 +2,12 @@ package com.boksl.running.core.di
 
 import android.content.Context
 import androidx.room.Room
-import com.boksl.running.data.location.DefaultLocationClient
-import com.boksl.running.data.location.LocationClient
 import com.boksl.running.data.local.db.AppDatabase
 import com.boksl.running.data.local.db.dao.RunningSessionDao
 import com.boksl.running.data.local.db.dao.TrackPointDao
 import com.boksl.running.data.local.preferences.ProfilePreferencesDataSource
+import com.boksl.running.data.location.DefaultLocationClient
+import com.boksl.running.data.location.LocationClient
 import com.boksl.running.data.repository.DefaultProfileRepository
 import com.boksl.running.data.repository.DefaultRunEngineRepository
 import com.boksl.running.data.repository.DefaultRunningRepository

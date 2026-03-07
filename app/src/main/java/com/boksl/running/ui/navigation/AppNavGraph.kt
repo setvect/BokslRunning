@@ -13,12 +13,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.boksl.running.ui.feature.history.HistoryDetailViewModel
 import com.boksl.running.ui.feature.history.HistoryListViewModel
 import com.boksl.running.ui.feature.history.HistoryScreenActions
@@ -94,7 +94,12 @@ fun appNavGraph(modifier: Modifier = Modifier) {
         }
         composable(
             route = AppRoute.ProfileSetup.route,
-            arguments = listOf(navArgument(AppRoute.ProfileSetup.entryPointArg) { type = NavType.StringType }),
+            arguments =
+                listOf(
+                    navArgument(AppRoute.ProfileSetup.ENTRY_POINT_ARG) {
+                        type = NavType.StringType
+                    },
+                ),
         ) {
             val viewModel: ProfileFormViewModel = hiltViewModel()
             val uiState by viewModel.uiState.collectAsState()
@@ -270,7 +275,8 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                                 navController.navigate(AppRoute.RunReady.route)
                             } else {
                                 viewModel.onRunStartRequested(
-                                    shouldShowRationale = activity?.let(::shouldShowLocationPermissionRationale) ?: false,
+                                    shouldShowRationale =
+                                        activity?.let(::shouldShowLocationPermissionRationale) ?: false,
                                 )
                             }
                         },
@@ -284,7 +290,12 @@ fun appNavGraph(modifier: Modifier = Modifier) {
         }
         composable(
             route = AppRoute.HistoryDetail.route,
-            arguments = listOf(navArgument(AppRoute.HistoryDetail.sessionIdArg) { type = NavType.LongType }),
+            arguments =
+                listOf(
+                    navArgument(AppRoute.HistoryDetail.SESSION_ID_ARG) {
+                        type = NavType.LongType
+                    },
+                ),
         ) {
             val viewModel: HistoryDetailViewModel = hiltViewModel()
             val uiState by viewModel.uiState.collectAsState()

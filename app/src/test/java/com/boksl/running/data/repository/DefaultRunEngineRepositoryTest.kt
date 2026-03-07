@@ -4,16 +4,15 @@ import androidx.paging.PagingData
 import com.boksl.running.data.location.LocationClient
 import com.boksl.running.data.location.LocationRequestConfig
 import com.boksl.running.domain.model.AppPreferences
+import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.HomeSummary
 import com.boksl.running.domain.model.LocationSample
+import com.boksl.running.domain.model.Profile
 import com.boksl.running.domain.model.RunEngineState
-import com.boksl.running.domain.model.RunSnapshot
 import com.boksl.running.domain.model.RunStats
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.SessionStatus
 import com.boksl.running.domain.model.TrackPoint
-import com.boksl.running.domain.model.Gender
-import com.boksl.running.domain.model.Profile
 import com.boksl.running.domain.repository.ProfileRepository
 import com.boksl.running.domain.repository.RunningRepository
 import com.boksl.running.ui.feature.run.RunTrackingServiceController
@@ -212,7 +211,8 @@ private class FakeProfileRepository : ProfileRepository {
                 updatedAtEpochMillis = 1_000L,
             ),
         )
-    private val preferences = MutableStateFlow(AppPreferences(onboardingCompleted = true, locationRationaleShown = true))
+    private val preferences =
+        MutableStateFlow(AppPreferences(onboardingCompleted = true, locationRationaleShown = true))
 
     override fun observeProfile(): Flow<Profile?> = profile
 

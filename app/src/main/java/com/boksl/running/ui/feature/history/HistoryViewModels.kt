@@ -1,10 +1,10 @@
 package com.boksl.running.ui.feature.history
 
-import androidx.paging.PagingData
-import androidx.paging.map
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.SessionStatus
 import com.boksl.running.domain.model.TrackPoint
@@ -45,10 +45,10 @@ class HistoryListViewModel
                 .map { dialogState ->
                     HistoryListUiState(permissionDialogState = dialogState)
                 }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(stateTimeoutMillis),
-                initialValue = HistoryListUiState(),
-            )
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(STATE_TIMEOUT_MILLIS),
+                    initialValue = HistoryListUiState(),
+                )
 
         fun onRunStartRequested(shouldShowRationale: Boolean) {
             viewModelScope.launch {
@@ -72,7 +72,7 @@ class HistoryDetailViewModel
         savedStateHandle: SavedStateHandle,
         runningRepository: RunningRepository,
     ) : ViewModel() {
-        private val sessionId: Long = savedStateHandle[AppRoute.HistoryDetail.sessionIdArg] ?: INVALID_SESSION_ID
+        private val sessionId: Long = savedStateHandle[AppRoute.HistoryDetail.SESSION_ID_ARG] ?: INVALID_SESSION_ID
 
         val uiState: StateFlow<HistoryDetailUiState> =
             combine(
@@ -88,7 +88,7 @@ class HistoryDetailViewModel
                 )
             }.stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(stateTimeoutMillis),
+                started = SharingStarted.WhileSubscribed(STATE_TIMEOUT_MILLIS),
                 initialValue = HistoryDetailUiState(isLoading = true),
             )
     }
@@ -122,4 +122,4 @@ private fun RunningSession.toHistoryListItem(): HistoryListItemUiState =
     )
 
 private const val INVALID_SESSION_ID = -1L
-private const val stateTimeoutMillis = 5_000L
+private const val STATE_TIMEOUT_MILLIS = 5_000L

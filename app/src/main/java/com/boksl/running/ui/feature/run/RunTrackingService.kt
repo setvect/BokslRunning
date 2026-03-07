@@ -77,8 +77,16 @@ class RunTrackingService : LifecycleService() {
         private const val ACTION_START = "com.boksl.running.action.START_TRACKING"
         private const val ACTION_STOP = "com.boksl.running.action.STOP_TRACKING"
 
-        fun createStartIntent(context: Context): Intent = Intent(context, RunTrackingService::class.java).setAction(ACTION_START)
+        fun createStartIntent(context: Context): Intent =
+            Intent(
+                context,
+                RunTrackingService::class.java,
+            ).setAction(ACTION_START)
 
-        fun createStopIntent(context: Context): Intent = Intent(context, RunTrackingService::class.java).setAction(ACTION_STOP)
+        fun createStopIntent(context: Context): Intent =
+            Intent(
+                context,
+                RunTrackingService::class.java,
+            ).setAction(ACTION_STOP)
     }
 }

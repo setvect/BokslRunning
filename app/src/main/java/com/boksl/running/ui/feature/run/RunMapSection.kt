@@ -10,15 +10,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.boksl.running.BuildConfig
 import com.boksl.running.domain.model.TrackPoint
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
-import com.google.android.gms.maps.model.CameraPosition
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -73,7 +73,12 @@ fun runMapSection(
             currentLocation?.let { location ->
                 Marker(
                     state = MarkerState(position = location),
-                    title = if (context.resources.configuration.locales[0].language == Locale.KOREAN.language) "현재 위치" else "Current location",
+                    title =
+                        if (context.resources.configuration.locales[0].language == Locale.KOREAN.language) {
+                            "현재 위치"
+                        } else {
+                            "Current location"
+                        },
                 )
             }
             if (routePoints.size >= 2) {

@@ -7,8 +7,8 @@ import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.Profile
 import com.boksl.running.domain.repository.ProfileRepository
 import com.boksl.running.ui.navigation.AppRoute
-import kotlinx.coroutines.async
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -48,7 +48,9 @@ class ProfileFormViewModelTest {
                 ProfileFormViewModel(
                     savedStateHandle =
                         SavedStateHandle(
-                            mapOf(AppRoute.ProfileSetup.entryPointArg to ProfileSetupEntryPoint.Onboarding.routeValue),
+                            mapOf(
+                                AppRoute.ProfileSetup.ENTRY_POINT_ARG to ProfileSetupEntryPoint.Onboarding.routeValue,
+                            ),
                         ),
                     profileRepository = repository,
                 )
@@ -89,7 +91,7 @@ class ProfileFormViewModelTest {
                 ProfileFormViewModel(
                     savedStateHandle =
                         SavedStateHandle(
-                            mapOf(AppRoute.ProfileSetup.entryPointArg to ProfileSetupEntryPoint.Settings.routeValue),
+                            mapOf(AppRoute.ProfileSetup.ENTRY_POINT_ARG to ProfileSetupEntryPoint.Settings.routeValue),
                         ),
                     profileRepository = repository,
                 )

@@ -28,15 +28,15 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
+import com.boksl.running.ui.feature.permission.locationPermissionDialog
+import com.boksl.running.ui.feature.run.runMapSection
+import com.boksl.running.ui.feature.run.toLatLng
 import com.boksl.running.ui.formatCaloriesText
 import com.boksl.running.ui.formatDistanceKm
 import com.boksl.running.ui.formatDurationText
 import com.boksl.running.ui.formatPaceText
 import com.boksl.running.ui.formatSessionDateTimeText
 import com.boksl.running.ui.formatSpeedKmh
-import com.boksl.running.ui.feature.permission.locationPermissionDialog
-import com.boksl.running.ui.feature.run.runMapSection
-import com.boksl.running.ui.feature.run.toLatLng
 
 data class HistoryScreenActions(
     val onNavigateUp: () -> Unit,
@@ -119,7 +119,10 @@ private fun historyListContent(
     val appendState = pagedItems.loadState.append
 
     when {
-        refreshState is LoadState.Loading && pagedItems.itemCount == 0 -> historyLoadingState(innerPadding = innerPadding)
+        refreshState is LoadState.Loading && pagedItems.itemCount == 0 ->
+            historyLoadingState(
+                innerPadding = innerPadding,
+            )
         refreshState is LoadState.Error && pagedItems.itemCount == 0 ->
             historyErrorState(
                 modifier =

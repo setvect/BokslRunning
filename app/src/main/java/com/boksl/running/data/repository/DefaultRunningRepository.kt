@@ -50,8 +50,8 @@ class DefaultRunningRepository
             Pager(
                 config =
                     PagingConfig(
-                        pageSize = historyPageSize,
-                        initialLoadSize = initialHistoryLoadSize,
+                        pageSize = HISTORY_PAGE_SIZE,
+                        initialLoadSize = INITIAL_HISTORY_LOAD_SIZE,
                         enablePlaceholders = false,
                     ),
                 pagingSourceFactory = { runningSessionDao.pagingSourceByStatus(SessionStatus.SAVED) },
@@ -156,8 +156,8 @@ class DefaultRunningRepository
             const val MAX_LATITUDE = 90.0
             const val MIN_LONGITUDE = -180.0
             const val MAX_LONGITUDE = 180.0
-            const val historyPageSize = 20
-            const val initialHistoryLoadSize = 40
+            const val HISTORY_PAGE_SIZE = 20
+            const val INITIAL_HISTORY_LOAD_SIZE = 40
         }
     }
 

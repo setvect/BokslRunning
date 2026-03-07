@@ -1,7 +1,5 @@
 package com.boksl.running.data.repository
 
-import android.content.Context
-import androidx.core.content.ContextCompat
 import com.boksl.running.core.di.IoDispatcher
 import com.boksl.running.core.util.calculateAveragePaceSecPerKm
 import com.boksl.running.core.util.calculateCurrentPaceSecPerKm
@@ -156,7 +154,9 @@ class DefaultRunEngineRepository
                 activeRunState.value =
                     savedState.copy(
                         state = RunEngineState.SAVED,
-                        durationMillis = savedState.startedAtEpochMillis?.let { finishedAt - it } ?: savedState.durationMillis,
+                        durationMillis =
+                            savedState.startedAtEpochMillis?.let { finishedAt - it }
+                                ?: savedState.durationMillis,
                     )
                 stopTrackingService()
                 stopTicker()
@@ -272,7 +272,10 @@ class DefaultRunEngineRepository
                 }
             val totalDistance = currentState.totalDistanceMeters + segmentDistance
             val durationMillis = max(0L, sample.recordedAtEpochMillis - startedAt)
-            val recentSamples = (currentState.recentSamples + sample).filter { sample.recordedAtEpochMillis - it.recordedAtEpochMillis <= CURRENT_PACE_WINDOW_MILLIS }
+            val recentSamples =
+                (currentState.recentSamples + sample).filter {
+                    sample.recordedAtEpochMillis - it.recordedAtEpochMillis <= CURRENT_PACE_WINDOW_MILLIS
+                }
             val currentPace = calculateCurrentPaceSecPerKm(recentSamples, CURRENT_PACE_WINDOW_MILLIS)
             val averagePace = calculateAveragePaceSecPerKm(totalDistance, durationMillis)
             val averageSpeed = if (durationMillis > 0L) totalDistance / (durationMillis / 1_000.0) else 0.0

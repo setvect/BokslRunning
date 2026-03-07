@@ -8,7 +8,7 @@ sealed class AppRoute(val route: String) {
     data object LocationPermissionGate : AppRoute("location_permission_gate")
 
     data object ProfileSetup : AppRoute("profile_setup/{entryPoint}") {
-        const val entryPointArg = "entryPoint"
+        const val ENTRY_POINT_ARG = "entryPoint"
 
         fun createRoute(entryPoint: String): String = "profile_setup/$entryPoint"
     }
@@ -26,7 +26,7 @@ sealed class AppRoute(val route: String) {
     data object History : AppRoute("history")
 
     data object HistoryDetail : AppRoute("history_detail/{sessionId}") {
-        const val sessionIdArg = "sessionId"
+        const val SESSION_ID_ARG = "sessionId"
 
         fun createRoute(sessionId: Long): String = "history_detail/$sessionId"
     }

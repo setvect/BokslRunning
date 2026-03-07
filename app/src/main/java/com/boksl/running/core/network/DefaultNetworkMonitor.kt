@@ -19,38 +19,38 @@ class DefaultNetworkMonitor
     constructor(
         @ApplicationContext private val context: Context,
     ) : NetworkMonitor {
-    override fun observeIsOnline(): Flow<Boolean> =
-        callbackFlow {
-            val connectivityManager =
-                context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        override fun observeIsOnline(): Flow<Boolean> =
+            callbackFlow {
+                val connectivityManager =
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-            fun isOnline(): Boolean {
-                val capabilities =
-                    connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork) ?: return false
-                return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            }
-
-            trySend(isOnline())
-
-            val callback =
-                object : ConnectivityManager.NetworkCallback() {
-                    override fun onAvailable(network: Network) {
-                        trySend(isOnline())
-                    }
-
-                    override fun onLost(network: Network) {
-                        trySend(isOnline())
-                    }
-
-                    override fun onCapabilitiesChanged(
-                        network: Network,
-                        networkCapabilities: NetworkCapabilities,
-                    ) {
-                        trySend(isOnline())
-                    }
+                fun isOnline(): Boolean {
+                    val capabilities =
+                        connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork) ?: return false
+                    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 }
 
-            connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), callback)
-            awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
-        }.conflate()
-}
+                trySend(isOnline())
+
+                val callback =
+                    object : ConnectivityManager.NetworkCallback() {
+                        override fun onAvailable(network: Network) {
+                            trySend(isOnline())
+                        }
+
+                        override fun onLost(network: Network) {
+                            trySend(isOnline())
+                        }
+
+                        override fun onCapabilitiesChanged(
+                            network: Network,
+                            networkCapabilities: NetworkCapabilities,
+                        ) {
+                            trySend(isOnline())
+                        }
+                    }
+
+                connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), callback)
+                awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
+            }.conflate()
+    }

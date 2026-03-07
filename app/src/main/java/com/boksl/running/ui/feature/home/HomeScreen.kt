@@ -16,11 +16,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.boksl.running.ui.feature.permission.locationPermissionDialog
 import com.boksl.running.ui.formatCaloriesValue
 import com.boksl.running.ui.formatDistanceKm
 import com.boksl.running.ui.formatDurationText
 import com.boksl.running.ui.formatSpeedKmh
-import com.boksl.running.ui.feature.permission.locationPermissionDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

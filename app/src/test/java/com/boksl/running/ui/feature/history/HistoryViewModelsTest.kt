@@ -1,9 +1,9 @@
 package com.boksl.running.ui.feature.history
 
 import androidx.lifecycle.SavedStateHandle
-import com.boksl.running.MainDispatcherRule
 import androidx.paging.PagingData
 import androidx.paging.testing.asSnapshot
+import com.boksl.running.MainDispatcherRule
 import com.boksl.running.domain.model.AppPreferences
 import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.HomeSummary
@@ -148,7 +148,7 @@ class HistoryViewModelsTest {
                 )
             val viewModel =
                 HistoryDetailViewModel(
-                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.sessionIdArg to 9L)),
+                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.SESSION_ID_ARG to 9L)),
                     runningRepository =
                         FakeRunningRepository(
                             sessions = mutableListOf(session),
@@ -180,7 +180,7 @@ class HistoryViewModelsTest {
 
             val unsavedViewModel =
                 HistoryDetailViewModel(
-                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.sessionIdArg to 3L)),
+                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.SESSION_ID_ARG to 3L)),
                     runningRepository =
                         FakeRunningRepository(
                             sessions = mutableListOf(unsavedSession),
@@ -196,7 +196,7 @@ class HistoryViewModelsTest {
 
             val missingViewModel =
                 HistoryDetailViewModel(
-                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.sessionIdArg to 99L)),
+                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.SESSION_ID_ARG to 99L)),
                     runningRepository = FakeRunningRepository(),
                 )
             backgroundScope.launch { missingViewModel.uiState.collect {} }

@@ -1,25 +1,26 @@
 package com.boksl.running
 
 import android.app.Application
+import android.content.Context
 import android.content.res.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import java.util.Locale
 
 @HiltAndroidApp
 class BokslRunningApp : Application() {
+    override fun attachBaseContext(base: Context?) {
+        super.attachBaseContext(base?.withKoreanLocale())
+    }
+
     override fun onCreate() {
         super.onCreate()
-        applyKoreanLocale()
+        Locale.setDefault(Locale.KOREA)
     }
+}
 
-    private fun applyKoreanLocale() {
-        val locale = Locale.KOREA
-        Locale.setDefault(locale)
-
-        val resources = applicationContext.resources
-        val configuration = Configuration(resources.configuration)
-        configuration.setLocale(locale)
-        configuration.setLayoutDirection(locale)
-        resources.updateConfiguration(configuration, resources.displayMetrics)
-    }
+internal fun Context.withKoreanLocale(): Context {
+    val configuration = Configuration(resources.configuration)
+    configuration.setLocale(Locale.KOREA)
+    configuration.setLayoutDirection(Locale.KOREA)
+    return createConfigurationContext(configuration)
 }

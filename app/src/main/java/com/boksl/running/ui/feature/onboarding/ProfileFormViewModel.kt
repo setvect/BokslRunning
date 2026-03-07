@@ -27,7 +27,7 @@ class ProfileFormViewModel
     ) : ViewModel() {
         private val entryPoint =
             ProfileSetupEntryPoint.fromRouteValue(
-                savedStateHandle.get<String>(AppRoute.ProfileSetup.entryPointArg),
+                savedStateHandle.get<String>(AppRoute.ProfileSetup.ENTRY_POINT_ARG),
             )
 
         private val _uiState = MutableStateFlow(ProfileFormUiState())

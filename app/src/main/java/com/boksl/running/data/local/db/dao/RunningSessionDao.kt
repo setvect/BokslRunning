@@ -1,9 +1,9 @@
 package com.boksl.running.data.local.db.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
-import androidx.paging.PagingSource
 import androidx.room.Query
 import androidx.room.Update
 import com.boksl.running.data.local.db.entity.RunningSessionEntity

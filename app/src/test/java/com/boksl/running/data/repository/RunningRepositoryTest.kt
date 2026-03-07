@@ -1,9 +1,9 @@
 package com.boksl.running.data.repository
 
 import android.content.Context
+import androidx.paging.testing.asSnapshot
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import androidx.paging.testing.asSnapshot
 import com.boksl.running.data.local.db.AppDatabase
 import com.boksl.running.domain.model.RunStats
 import com.boksl.running.domain.model.RunningSession
