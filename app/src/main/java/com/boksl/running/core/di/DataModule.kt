@@ -6,6 +6,8 @@ import com.boksl.running.data.local.db.AppDatabase
 import com.boksl.running.data.local.db.dao.RunningSessionDao
 import com.boksl.running.data.local.db.dao.TrackPointDao
 import com.boksl.running.data.local.preferences.ProfilePreferencesDataSource
+import com.boksl.running.data.debug.DebugRunSeedGenerator
+import com.boksl.running.data.debug.DebugSeedManager
 import com.boksl.running.data.location.DefaultLocationClient
 import com.boksl.running.data.location.LocationClient
 import com.boksl.running.data.repository.DefaultProfileRepository
@@ -82,4 +84,8 @@ object DataModule {
     @Singleton
     fun provideProfileRepository(profilePreferencesDataSource: ProfilePreferencesDataSource): ProfileRepository =
         DefaultProfileRepository(profilePreferencesDataSource)
+
+    @Provides
+    @Singleton
+    fun provideDebugSeedManager(debugRunSeedGenerator: DebugRunSeedGenerator): DebugSeedManager = debugRunSeedGenerator
 }

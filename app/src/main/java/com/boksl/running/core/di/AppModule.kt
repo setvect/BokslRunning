@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import com.boksl.running.BuildConfig
 import com.boksl.running.core.network.DefaultNetworkMonitor
 import com.boksl.running.core.network.NetworkMonitor
 import dagger.Module
@@ -19,6 +20,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    @Provides
+    @DebugBuild
+    fun provideDebugBuildFlag(): Boolean = BuildConfig.DEBUG
+
     @Provides
     @Singleton
     fun providePreferencesDataStore(

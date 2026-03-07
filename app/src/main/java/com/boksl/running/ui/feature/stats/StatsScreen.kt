@@ -52,6 +52,7 @@ import com.patrykandpatrick.vico.core.axis.AxisPosition
 import com.patrykandpatrick.vico.core.chart.layout.HorizontalLayout
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
 import com.patrykandpatrick.vico.core.component.shape.Shapes
+import com.patrykandpatrick.vico.core.chart.values.AxisValuesOverrider
 import com.patrykandpatrick.vico.core.chart.values.ChartValues
 import com.patrykandpatrick.vico.core.entry.ChartEntryModel
 import com.patrykandpatrick.vico.core.component.marker.MarkerComponent
@@ -61,6 +62,9 @@ import com.patrykandpatrick.vico.core.marker.Marker
 import com.patrykandpatrick.vico.core.marker.MarkerLabelFormatter
 import com.patrykandpatrick.vico.core.marker.MarkerVisibilityChangeListener
 import com.patrykandpatrick.vico.core.scroll.InitialScroll
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,6 +227,7 @@ private fun monthlyStatsChart(
             }
         }
     val chartValues = remember(monthlyStats, selectedMetric) { monthlyStats.map { it.chartValue(selectedMetric) } }
+    val yAxisConfig = remember(chartValues, selectedMetric) { resolveYAxisConfig(chartValues, selectedMetric) }
     val xLabels = remember(monthlyStats) { monthlyStats.map { it.yearMonth.formatYearMonthLabel() } }
     val startAxisValueFormatter =
         remember(selectedMetric) {
@@ -245,7 +250,7 @@ private fun monthlyStatsChart(
     val columnComponent =
         lineComponent(
             color = MaterialTheme.colorScheme.primary,
-            thickness = 18.dp,
+            thickness = CHART_BAR_THICKNESS,
             shape = Shapes.roundedCornerShape(allPercent = 40),
         )
 
@@ -255,15 +260,30 @@ private fun monthlyStatsChart(
 
     ProvideChartStyle(chartStyle = m3ChartStyle()) {
         Chart(
-            chart = columnChart(columns = listOf(columnComponent), spacing = 20.dp),
+            chart =
+                columnChart(
+                    columns = listOf(columnComponent),
+                    spacing = CHART_BAR_SPACING,
+                    axisValuesOverrider = AxisValuesOverrider.fixed(minY = 0f, maxY = yAxisConfig.maxValue),
+                ),
             chartModelProducer = modelProducer,
             chartScrollSpec = chartScrollSpec,
             chartScrollState = chartScrollState,
-            startAxis = rememberStartAxis(valueFormatter = startAxisValueFormatter),
+            startAxis =
+                rememberStartAxis(
+                    valueFormatter = startAxisValueFormatter,
+                    itemPlacer = remember(yAxisConfig.maxLabelCount) { AxisItemPlacer.Vertical.default(maxItemCount = yAxisConfig.maxLabelCount) },
+                ),
             bottomAxis =
                 rememberBottomAxis(
                     valueFormatter = bottomAxisValueFormatter,
-                    itemPlacer = remember { AxisItemPlacer.Horizontal.default(spacing = 1) },
+                    itemPlacer =
+                        remember {
+                            AxisItemPlacer.Horizontal.default(
+                                spacing = 1,
+                                addExtremeLabelPadding = true,
+                            )
+                        },
                 ),
             marker = marker,
             markerVisibilityChangeListener = markerVisibilityChangeListener,
@@ -376,9 +396,9 @@ private fun MonthlyStatsPoint.formatValue(metric: StatsChartMetric): String =
 
 private fun Double.formatForAxis(metric: StatsChartMetric): String =
     when (metric) {
-        StatsChartMetric.DISTANCE -> String.format("%.1f", this)
+        StatsChartMetric.DISTANCE -> formatCompactAxisNumber()
         StatsChartMetric.DURATION -> toLong().formatChartDurationLabel()
-        StatsChartMetric.AVERAGE_SPEED -> String.format("%.1f", this)
+        StatsChartMetric.AVERAGE_SPEED -> formatCompactAxisNumber()
     }
 
 private fun Double.formatForMarker(metric: StatsChartMetric): String =
@@ -387,3 +407,120 @@ private fun Double.formatForMarker(metric: StatsChartMetric): String =
         StatsChartMetric.DURATION -> toLong().formatStatsChartValue(metric)
         StatsChartMetric.AVERAGE_SPEED -> formatStatsChartValue(metric)
     }
+
+private data class YAxisConfig(
+    val maxValue: Float,
+    val maxLabelCount: Int,
+)
+
+private fun resolveYAxisConfig(
+    chartValues: List<Double>,
+    metric: StatsChartMetric,
+): YAxisConfig {
+    val rawMaxValue = chartValues.maxOrNull()?.takeIf { it > 0.0 } ?: 0.0
+    return when (metric) {
+        StatsChartMetric.DISTANCE,
+        StatsChartMetric.AVERAGE_SPEED -> {
+            val intervalCount = DEFAULT_Y_AXIS_INTERVAL_COUNT
+            val step = resolveNiceDecimalStep(rawMaxValue / intervalCount)
+            val resolvedMaxValue =
+                if (rawMaxValue <= 0.0) {
+                    step
+                } else {
+                    kotlin.math.ceil(rawMaxValue / step) * step
+                }
+            YAxisConfig(
+                maxValue = resolvedMaxValue.toFloat(),
+                maxLabelCount = intervalCount + 1,
+            )
+        }
+        StatsChartMetric.DURATION -> resolveDurationYAxisConfig(rawMaxValue)
+    }
+}
+
+private fun resolveNiceDecimalStep(rawStep: Double): Double {
+    if (rawStep <= 0.0) return 1.0
+    val magnitude = 10.0.pow(floor(log10(rawStep)))
+    val normalized = rawStep / magnitude
+    val niceNormalized =
+        when {
+            normalized <= 1.0 -> 1.0
+            normalized <= 2.0 -> 2.0
+            normalized <= 2.5 -> 2.5
+            normalized <= 5.0 -> 5.0
+            else -> 10.0
+        }
+    return niceNormalized * magnitude
+}
+
+private fun Double.formatCompactAxisNumber(): String =
+    if (this % 1.0 == 0.0) {
+        String.format("%.0f", this)
+    } else {
+        String.format("%.1f", this)
+    }
+
+private const val DEFAULT_Y_AXIS_INTERVAL_COUNT = 5
+private val CHART_BAR_THICKNESS = 24.dp
+private val CHART_BAR_SPACING = 32.dp
+private val DURATION_AXIS_STEP_MINUTES = listOf(30L, 60L, 90L, 120L, 180L, 240L, 360L)
+private val DURATION_AXIS_INTERVAL_COUNTS = listOf(3, 4, 5)
+
+private fun resolveDurationYAxisConfig(rawMaxValue: Double): YAxisConfig {
+    if (rawMaxValue <= 0.0) {
+        val defaultIntervalCount = 4
+        val defaultStepMillis = 30L * 60_000.0
+        return YAxisConfig(
+            maxValue = (defaultIntervalCount * defaultStepMillis).toFloat(),
+            maxLabelCount = defaultIntervalCount + 1,
+        )
+    }
+
+    val bestCandidate =
+        DURATION_AXIS_STEP_MINUTES
+            .flatMap { stepMinutes ->
+                DURATION_AXIS_INTERVAL_COUNTS.map { intervalCount ->
+                    val stepMillis = stepMinutes * 60_000.0
+                    val maxValue = stepMillis * intervalCount
+                    DurationAxisCandidate(
+                        maxValue = maxValue,
+                        intervalCount = intervalCount,
+                        score = durationAxisCandidateScore(rawMaxValue = rawMaxValue, maxValue = maxValue, intervalCount = intervalCount, stepMinutes = stepMinutes),
+                    )
+                }
+            }.filter { candidate -> candidate.maxValue >= rawMaxValue }
+            .minByOrNull(DurationAxisCandidate::score)
+            ?: DurationAxisCandidate(
+                maxValue = 360L * 60_000.0 * 5,
+                intervalCount = 5,
+                score = 0.0,
+            )
+
+    return YAxisConfig(
+        maxValue = bestCandidate.maxValue.toFloat(),
+        maxLabelCount = bestCandidate.intervalCount + 1,
+    )
+}
+
+private fun durationAxisCandidateScore(
+    rawMaxValue: Double,
+    maxValue: Double,
+    intervalCount: Int,
+    stepMinutes: Long,
+): Double {
+    val overshootScore = (maxValue - rawMaxValue) / rawMaxValue
+    val intervalPenalty = kotlin.math.abs(intervalCount - 4) * 0.08
+    val stepPenalty =
+        when (stepMinutes) {
+            30L, 60L, 120L, 180L -> 0.0
+            90L, 240L -> 0.03
+            else -> 0.08
+        }
+    return overshootScore + intervalPenalty + stepPenalty
+}
+
+private data class DurationAxisCandidate(
+    val maxValue: Double,
+    val intervalCount: Int,
+    val score: Double,
+)

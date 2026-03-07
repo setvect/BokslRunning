@@ -43,6 +43,7 @@ import com.boksl.running.ui.feature.run.runLiveScreen
 import com.boksl.running.ui.feature.run.runReadyScreen
 import com.boksl.running.ui.feature.run.runSummaryScreen
 import com.boksl.running.ui.feature.settings.settingsScreen
+import com.boksl.running.ui.feature.settings.SettingsViewModel
 import com.boksl.running.ui.feature.stats.statsScreen
 import com.boksl.running.ui.feature.stats.StatsViewModel
 
@@ -318,7 +319,11 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             )
         }
         composable(route = AppRoute.Settings.route) {
+            val viewModel: SettingsViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
             settingsScreen(
+                uiState = uiState,
                 onNavigateUp = { navController.navigateUp() },
                 onEditProfile = {
                     navController.navigate(
@@ -331,6 +336,11 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                         launchSingleTop = true
                     }
                 },
+                onGenerateSeedDataClick = viewModel::onGenerateSeedDataClick,
+                onDeleteSeedDataClick = viewModel::onDeleteSeedDataClick,
+                onConfirmPendingAction = viewModel::confirmPendingAction,
+                onDismissPendingAction = viewModel::dismissPendingAction,
+                onClearStatusMessage = viewModel::clearStatusMessage,
             )
         }
     }
