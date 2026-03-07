@@ -11,6 +11,9 @@ import kotlin.math.sqrt
 
 private const val EARTH_RADIUS_METERS = 6_371_000.0
 private const val MIN_DISTANCE_FOR_PACE_METERS = 5.0
+private const val MIN_DISTANCE_FOR_SPEED_METERS = 3.0
+private const val MIN_DURATION_FOR_SPEED_MILLIS = 2_000L
+private const val MAX_PLAUSIBLE_SPEED_MPS = 12.5
 
 fun calculateSegmentDistanceMeters(
     previous: LocationSample,
@@ -72,14 +75,23 @@ fun resolveMaxSpeedMps(
     previous: LocationSample?,
     current: LocationSample,
 ): Double {
-    val directSpeed = current.speedMps?.toDouble() ?: 0.0
+    val directSpeed =
+        current.speedMps
+            ?.toDouble()
+            ?.takeIf { it in 0.0..MAX_PLAUSIBLE_SPEED_MPS }
+            ?: 0.0
     val segmentSpeed =
         if (previous == null) {
             0.0
         } else {
-            val durationSeconds =
-                (current.recordedAtEpochMillis - previous.recordedAtEpochMillis).coerceAtLeast(1L) / 1_000.0
-            calculateSegmentDistanceMeters(previous, current) / durationSeconds
+            val durationMillis = current.recordedAtEpochMillis - previous.recordedAtEpochMillis
+            val distanceMeters = calculateSegmentDistanceMeters(previous, current)
+            if (durationMillis < MIN_DURATION_FOR_SPEED_MILLIS || distanceMeters < MIN_DISTANCE_FOR_SPEED_METERS) {
+                0.0
+            } else {
+                val resolved = distanceMeters / (durationMillis / 1_000.0)
+                resolved.takeIf { it <= MAX_PLAUSIBLE_SPEED_MPS } ?: 0.0
+            }
         }
     return max(directSpeed, segmentSpeed)
 }

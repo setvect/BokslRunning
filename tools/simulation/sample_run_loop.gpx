@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="BokslRunning">
+  <trk>
+    <name>BokslRunning Sample Jog Loop</name>
+    <trkseg>
+      <trkpt lat="37.566500" lon="126.978000"><time>2026-03-07T00:00:00Z</time></trkpt>
+      <trkpt lat="37.566560" lon="126.978040"><time>2026-03-07T00:00:05Z</time></trkpt>
+      <trkpt lat="37.566620" lon="126.978090"><time>2026-03-07T00:00:10Z</time></trkpt>
+      <trkpt lat="37.566680" lon="126.978150"><time>2026-03-07T00:00:15Z</time></trkpt>
+      <trkpt lat="37.566740" lon="126.978210"><time>2026-03-07T00:00:20Z</time></trkpt>
+      <trkpt lat="37.566800" lon="126.978270"><time>2026-03-07T00:00:25Z</time></trkpt>
+      <trkpt lat="37.566850" lon="126.978340"><time>2026-03-07T00:00:30Z</time></trkpt>
+      <trkpt lat="37.566900" lon="126.978420"><time>2026-03-07T00:00:35Z</time></trkpt>
+      <trkpt lat="37.566940" lon="126.978500"><time>2026-03-07T00:00:40Z</time></trkpt>
+      <trkpt lat="37.566980" lon="126.978590"><time>2026-03-07T00:00:45Z</time></trkpt>
+      <trkpt lat="37.567010" lon="126.978680"><time>2026-03-07T00:00:50Z</time></trkpt>
+      <trkpt lat="37.567030" lon="126.978780"><time>2026-03-07T00:00:55Z</time></trkpt>
+      <trkpt lat="37.567040" lon="126.978880"><time>2026-03-07T00:01:00Z</time></trkpt>
+      <trkpt lat="37.567030" lon="126.978980"><time>2026-03-07T00:01:05Z</time></trkpt>
+      <trkpt lat="37.567000" lon="126.979070"><time>2026-03-07T00:01:10Z</time></trkpt>
+      <trkpt lat="37.566960" lon="126.979160"><time>2026-03-07T00:01:15Z</time></trkpt>
+      <trkpt lat="37.566910" lon="126.979240"><time>2026-03-07T00:01:20Z</time></trkpt>
+      <trkpt lat="37.566850" lon="126.979310"><time>2026-03-07T00:01:25Z</time></trkpt>
+      <trkpt lat="37.566780" lon="126.979370"><time>2026-03-07T00:01:30Z</time></trkpt>
+      <trkpt lat="37.566710" lon="126.979420"><time>2026-03-07T00:01:35Z</time></trkpt>
+      <trkpt lat="37.566640" lon="126.979460"><time>2026-03-07T00:01:40Z</time></trkpt>
+      <trkpt lat="37.566570" lon="126.979490"><time>2026-03-07T00:01:45Z</time></trkpt>
+      <trkpt lat="37.566500" lon="126.979510"><time>2026-03-07T00:01:50Z</time></trkpt>
+      <trkpt lat="37.566430" lon="126.979500"><time>2026-03-07T00:01:55Z</time></trkpt>
+      <trkpt lat="37.566360" lon="126.979470"><time>2026-03-07T00:02:00Z</time></trkpt>
+      <trkpt lat="37.566290" lon="126.979430"><time>2026-03-07T00:02:05Z</time></trkpt>
+      <trkpt lat="37.566220" lon="126.979380"><time>2026-03-07T00:02:10Z</time></trkpt>
+      <trkpt lat="37.566160" lon="126.979310"><time>2026-03-07T00:02:15Z</time></trkpt>
+      <trkpt lat="37.566110" lon="126.979230"><time>2026-03-07T00:02:20Z</time></trkpt>
+      <trkpt lat="37.566070" lon="126.979140"><time>2026-03-07T00:02:25Z</time></trkpt>
+      <trkpt lat="37.566040" lon="126.979050"><time>2026-03-07T00:02:30Z</time></trkpt>
+      <trkpt lat="37.566020" lon="126.978950"><time>2026-03-07T00:02:35Z</time></trkpt>
+      <trkpt lat="37.566010" lon="126.978850"><time>2026-03-07T00:02:40Z</time></trkpt>
+      <trkpt lat="37.566020" lon="126.978750"><time>2026-03-07T00:02:45Z</time></trkpt>
+      <trkpt lat="37.566040" lon="126.978650"><time>2026-03-07T00:02:50Z</time></trkpt>
+      <trkpt lat="37.566070" lon="126.978560"><time>2026-03-07T00:02:55Z</time></trkpt>
+      <trkpt lat="37.566110" lon="126.978470"><time>2026-03-07T00:03:00Z</time></trkpt>
+      <trkpt lat="37.566160" lon="126.978390"><time>2026-03-07T00:03:05Z</time></trkpt>
+      <trkpt lat="37.566220" lon="126.978320"><time>2026-03-07T00:03:10Z</time></trkpt>
+      <trkpt lat="37.566290" lon="126.978260"><time>2026-03-07T00:03:15Z</time></trkpt>
+      <trkpt lat="37.566360" lon="126.978210"><time>2026-03-07T00:03:20Z</time></trkpt>
+      <trkpt lat="37.566430" lon="126.978170"><time>2026-03-07T00:03:25Z</time></trkpt>
+      <trkpt lat="37.566500" lon="126.978140"><time>2026-03-07T00:03:30Z</time></trkpt>
+      <trkpt lat="37.566560" lon="126.978110"><time>2026-03-07T00:03:35Z</time></trkpt>
+      <trkpt lat="37.566500" lon="126.978000"><time>2026-03-07T00:03:40Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

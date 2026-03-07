@@ -50,6 +50,30 @@ class RunMetricsCalculatorTest {
         assertTrue(calories > 0.0)
     }
 
+    @Test
+    fun resolveMaxSpeedMpsIgnoresTooShortInitialSegment() {
+        val previous = locationSample(latitude = 37.0, longitude = 127.0, time = 1_000L)
+        val current = locationSample(latitude = 37.0009, longitude = 127.0, time = 1_500L)
+
+        assertEquals(3.0, resolveMaxSpeedMps(previous, current), 0.0)
+    }
+
+    @Test
+    fun resolveMaxSpeedMpsIgnoresImplausibleSegmentSpeedSpike() {
+        val previous = locationSample(latitude = 37.0, longitude = 127.0, time = 1_000L)
+        val current =
+            LocationSample(
+                latitude = 37.01,
+                longitude = 127.0,
+                accuracyMeters = 5f,
+                speedMps = null,
+                altitudeMeters = null,
+                recordedAtEpochMillis = 4_000L,
+            )
+
+        assertEquals(0.0, resolveMaxSpeedMps(previous, current), 0.0)
+    }
+
     private fun locationSample(
         latitude: Double,
         longitude: Double,

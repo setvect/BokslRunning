@@ -24,6 +24,7 @@ import java.util.Locale
 @Composable
 fun runReadyScreen(
     snapshot: RunSnapshot?,
+    isStarting: Boolean,
     onStartRun: () -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -36,12 +37,17 @@ fun runReadyScreen(
                     listOf(
                         "현재 위치: ${snapshot?.latestLocation?.latitude ?: "-"}, ${snapshot?.latestLocation?.longitude ?: "-"}",
                         "오프라인에서도 기록은 저장됩니다.",
+                        if (isStarting) "러닝을 시작하는 중입니다..." else "시작 버튼을 누르면 기록이 시작됩니다.",
                     ),
             )
-            Button(onClick = onStartRun, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "시작")
+            Button(
+                onClick = onStartRun,
+                enabled = !isStarting,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = if (isStarting) "시작 중..." else "시작")
             }
-            Button(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onCancel, enabled = !isStarting, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "취소")
             }
         },

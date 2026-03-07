@@ -101,3 +101,28 @@ adb shell getprop sys.boot_completed
 ```bash
 ./gradlew connectedDebugAndroidTest
 ```
+
+## 러닝 시뮬레이션
+
+- 에뮬레이터에서 앱 설치/실행 후 `러닝 준비` 화면까지 진입
+- `adb` 기반 경로 재생:
+```bash
+./scripts/simulate_run.sh
+```
+
+- 재생 속도 배속:
+```bash
+./scripts/simulate_run.sh --speed 2.0
+```
+
+- 특정 에뮬레이터 지정:
+```bash
+./scripts/simulate_run.sh --serial emulator-5554
+```
+
+- 샘플 경로 파일:
+  - CSV: `tools/simulation/sample_run_loop.csv`
+  - GPX: `tools/simulation/sample_run_loop.gpx`
+
+- Android Studio 에뮬레이터 수동 재생:
+  - `Extended controls > Location > Routes`에서 `tools/simulation/sample_run_loop.gpx` 선택

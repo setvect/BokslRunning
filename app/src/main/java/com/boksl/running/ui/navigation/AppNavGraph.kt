@@ -186,20 +186,24 @@ fun appNavGraph(modifier: Modifier = Modifier) {
         }
         composable(route = AppRoute.RunReady.route) {
             val viewModel: RunSessionViewModel = hiltViewModel()
-            val snapshot by viewModel.snapshot.collectAsState()
+            val uiState by viewModel.uiState.collectAsState()
 
             LaunchedEffect(Unit) {
                 viewModel.prepareRun()
             }
 
-            runReadyScreen(
-                snapshot = snapshot,
-                onStartRun = {
-                    viewModel.startRun()
+            LaunchedEffect(uiState.shouldNavigateToLive) {
+                if (uiState.shouldNavigateToLive) {
                     navController.navigate(AppRoute.RunLive.route) {
                         popUpTo(AppRoute.RunReady.route) { inclusive = true }
                     }
-                },
+                }
+            }
+
+            runReadyScreen(
+                snapshot = uiState.snapshot,
+                isStarting = uiState.isStarting,
+                onStartRun = viewModel::startRun,
                 onCancel = {
                     viewModel.discardRun()
                     navController.navigateUp()
@@ -208,14 +212,14 @@ fun appNavGraph(modifier: Modifier = Modifier) {
         }
         composable(route = AppRoute.RunLive.route) {
             val viewModel: RunSessionViewModel = hiltViewModel()
-            val snapshot by viewModel.snapshot.collectAsState()
+            val uiState by viewModel.uiState.collectAsState()
 
             LaunchedEffect(Unit) {
                 viewModel.resumeActiveRun()
             }
 
-            LaunchedEffect(snapshot?.state) {
-                if (snapshot?.state == com.boksl.running.domain.model.RunEngineState.SAVED) {
+            LaunchedEffect(uiState.snapshot?.state) {
+                if (uiState.snapshot?.state == com.boksl.running.domain.model.RunEngineState.SAVED) {
                     navController.navigate(AppRoute.RunSummary.route) {
                         popUpTo(AppRoute.RunLive.route) { inclusive = true }
                     }
@@ -223,7 +227,7 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             }
 
             runLiveScreen(
-                snapshot = snapshot,
+                snapshot = uiState.snapshot,
                 onRequestStop = viewModel::requestStop,
                 onConfirmSave = viewModel::confirmSave,
                 onCancelStop = viewModel::cancelStop,
@@ -231,10 +235,10 @@ fun appNavGraph(modifier: Modifier = Modifier) {
         }
         composable(route = AppRoute.RunSummary.route) {
             val viewModel: RunSessionViewModel = hiltViewModel()
-            val snapshot by viewModel.snapshot.collectAsState()
+            val uiState by viewModel.uiState.collectAsState()
 
             runSummaryScreen(
-                snapshot = snapshot,
+                snapshot = uiState.snapshot,
                 onComplete = {
                     navController.navigate(AppRoute.Home.route) {
                         popUpTo(AppRoute.Home.route) { inclusive = false }

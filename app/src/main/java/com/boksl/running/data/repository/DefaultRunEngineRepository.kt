@@ -277,8 +277,14 @@ class DefaultRunEngineRepository
             val averagePace = calculateAveragePaceSecPerKm(totalDistance, durationMillis)
             val averageSpeed = if (durationMillis > 0L) totalDistance / (durationMillis / 1_000.0) else 0.0
             val calorie = resolveCalories(averageSpeedMps = averageSpeed, durationMillis = durationMillis)
-            val maxSpeed = max(currentState.maxSpeedMps, resolveMaxSpeedMps(previous, sample))
             val pointCount = currentState.pointCount + 1
+            val candidateMaxSpeed = resolveMaxSpeedMps(previous, sample)
+            val maxSpeed =
+                if (pointCount <= 2) {
+                    currentState.maxSpeedMps
+                } else {
+                    max(currentState.maxSpeedMps, candidateMaxSpeed)
+                }
 
             val trackPoint =
                 TrackPoint(
