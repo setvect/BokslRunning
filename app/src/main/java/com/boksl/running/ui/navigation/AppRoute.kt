@@ -23,6 +23,8 @@ sealed class AppRoute(val route: String) {
 
     data object Settings : AppRoute("settings")
 
+    data object Export : AppRoute("export")
+
     data object History : AppRoute("history")
 
     data object HistoryDetail : AppRoute("history_detail/{sessionId}") {

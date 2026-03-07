@@ -24,6 +24,7 @@ fun settingsScreen(
     uiState: SettingsUiState,
     onNavigateUp: () -> Unit,
     onEditProfile: () -> Unit,
+    onOpenExport: () -> Unit,
     onNavigateHome: () -> Unit,
     onGenerateSeedDataClick: () -> Unit,
     onDeleteSeedDataClick: () -> Unit,
@@ -55,11 +56,11 @@ fun settingsScreen(
                 Text(text = "프로필 정보 수정")
             }
             Button(
-                onClick = {},
-                enabled = false,
+                onClick = onOpenExport,
+                enabled = !uiState.isBusy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(text = "전체 내보내기 (준비 중)")
+                Text(text = "전체 내보내기")
             }
             Button(
                 onClick = {},

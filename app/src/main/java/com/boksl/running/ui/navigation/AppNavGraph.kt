@@ -42,8 +42,12 @@ import com.boksl.running.ui.feature.run.RunSessionViewModel
 import com.boksl.running.ui.feature.run.runLiveScreen
 import com.boksl.running.ui.feature.run.runReadyScreen
 import com.boksl.running.ui.feature.run.runSummaryScreen
-import com.boksl.running.ui.feature.settings.settingsScreen
+import com.boksl.running.ui.feature.settings.ExportEvent
+import com.boksl.running.ui.feature.settings.ExportViewModel
+import com.boksl.running.ui.feature.settings.buildExportShareIntent
+import com.boksl.running.ui.feature.settings.exportScreen
 import com.boksl.running.ui.feature.settings.SettingsViewModel
+import com.boksl.running.ui.feature.settings.settingsScreen
 import com.boksl.running.ui.feature.stats.statsScreen
 import com.boksl.running.ui.feature.stats.StatsViewModel
 
@@ -330,6 +334,7 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                         AppRoute.ProfileSetup.createRoute(ProfileSetupEntryPoint.Settings.routeValue),
                     )
                 },
+                onOpenExport = { navController.navigate(AppRoute.Export.route) },
                 onNavigateHome = {
                     navController.navigate(AppRoute.Home.route) {
                         popUpTo(AppRoute.Home.route) { inclusive = false }
@@ -341,6 +346,38 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                 onConfirmPendingAction = viewModel::confirmPendingAction,
                 onDismissPendingAction = viewModel::dismissPendingAction,
                 onClearStatusMessage = viewModel::clearStatusMessage,
+            )
+        }
+        composable(route = AppRoute.Export.route) {
+            val context = LocalContext.current
+            val viewModel: ExportViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            LaunchedEffect(Unit) {
+                viewModel.event.collect { event ->
+                    when (event) {
+                        is ExportEvent.ShareFile ->
+                            runCatching {
+                                context.startActivity(buildExportShareIntent(context, event.filePath))
+                            }.onFailure { throwable ->
+                                viewModel.showShareError(throwable.message ?: "파일 공유를 시작하지 못했습니다.")
+                            }
+                    }
+                }
+            }
+
+            exportScreen(
+                uiState = uiState,
+                onNavigateUp = { navController.navigateUp() },
+                onStartExport = viewModel::startExport,
+                onCancelExport = viewModel::cancelExport,
+                onShareExport = viewModel::shareExportFile,
+                onNavigateHome = {
+                    navController.navigate(AppRoute.Home.route) {
+                        popUpTo(AppRoute.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
     }

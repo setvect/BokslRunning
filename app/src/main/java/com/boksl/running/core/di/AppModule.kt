@@ -14,6 +14,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.json.Json
 import java.io.File
 import javax.inject.Singleton
 
@@ -44,4 +45,12 @@ object AppModule {
     @Provides
     @Singleton
     fun provideNetworkMonitor(defaultNetworkMonitor: DefaultNetworkMonitor): NetworkMonitor = defaultNetworkMonitor
+
+    @Provides
+    @Singleton
+    fun provideJson(): Json =
+        Json {
+            prettyPrint = true
+            encodeDefaults = true
+        }
 }

@@ -144,7 +144,7 @@
   - Phase 6 단위 테스트 추가: DAO 월별 집계, repository 버킷 보정, stats ViewModel 상태, 포맷터 검증
   - 차트 라이브러리 적용 완료: 현재 프로젝트의 AGP/Compose 제약에 맞춰 Vico Compose `1.13.1` 사용
 
-- [ ] **Phase 7. 내보내기 구현**
+- [x] **Phase 7. 내보내기 구현**
 
 - 목표: 전체 데이터 백업 가능한 단일 JSON 생성 기능을 완성한다.
 - 주요 작업:
@@ -154,6 +154,12 @@
 - 산출물:
   - 스토리보드 11 구간 동작
   - `bokslrunning_export_v1.json` 생성 가능
+- 완료 내역 (2026-03-08):
+  - 내보내기 전용 계약 추가 완료: `ExportRepository`, `ExportProgress`, export DTO 및 `schema_version = 1` JSON 스키마 고정
+  - 전체 백업 내보내기 구현 완료: `SAVED` 세션 + 트랙포인트 + 프로필 + 앱 설정을 `bokslrunning_export_v1.json` 단일 파일로 캐시에 생성
+  - Android 공유 경로 구현 완료: `FileProvider` + cache export path + system share sheet 기반 `파일 공유/저장` 연결
+  - 설정/내보내기 화면 구현 완료: 설정 버튼 활성화, export route 추가, 준비/진행/완료/오류 상태 UI 및 취소/재시도 동작 연결
+  - Phase 7 단위 테스트 추가: export repository JSON 스키마/필터링/빈 데이터/취소 정리, export ViewModel 상태 전이/이벤트 검증
 
 - [ ] **Phase 8. 가져오기 구현**
 

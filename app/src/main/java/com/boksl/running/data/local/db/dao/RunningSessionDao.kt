@@ -65,7 +65,22 @@ interface RunningSessionDao {
     @Query("SELECT * FROM running_sessions WHERE status = :status ORDER BY started_at_epoch_millis DESC LIMIT 1")
     suspend fun getLatestByStatus(status: SessionStatus): RunningSessionEntity?
 
-    @Query("SELECT id FROM running_sessions WHERE external_id LIKE :externalIdPattern ORDER BY started_at_epoch_millis DESC")
+    @Query(
+        """
+        SELECT * FROM running_sessions
+        WHERE status = :status
+        ORDER BY started_at_epoch_millis DESC
+        """,
+    )
+    suspend fun getByStatus(status: SessionStatus): List<RunningSessionEntity>
+
+    @Query(
+        """
+        SELECT id FROM running_sessions
+        WHERE external_id LIKE :externalIdPattern
+        ORDER BY started_at_epoch_millis DESC
+        """,
+    )
     suspend fun getIdsByExternalIdPattern(externalIdPattern: String): List<Long>
 
     @Query("DELETE FROM running_sessions WHERE external_id LIKE :externalIdPattern")

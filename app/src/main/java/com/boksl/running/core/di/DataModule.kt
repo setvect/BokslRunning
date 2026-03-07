@@ -2,17 +2,19 @@ package com.boksl.running.core.di
 
 import android.content.Context
 import androidx.room.Room
+import com.boksl.running.data.debug.DebugRunSeedGenerator
+import com.boksl.running.data.debug.DebugSeedManager
 import com.boksl.running.data.local.db.AppDatabase
 import com.boksl.running.data.local.db.dao.RunningSessionDao
 import com.boksl.running.data.local.db.dao.TrackPointDao
-import com.boksl.running.data.local.preferences.ProfilePreferencesDataSource
-import com.boksl.running.data.debug.DebugRunSeedGenerator
-import com.boksl.running.data.debug.DebugSeedManager
 import com.boksl.running.data.location.DefaultLocationClient
 import com.boksl.running.data.location.LocationClient
+import com.boksl.running.data.local.preferences.ProfilePreferencesDataSource
+import com.boksl.running.data.repository.DefaultExportRepository
 import com.boksl.running.data.repository.DefaultProfileRepository
 import com.boksl.running.data.repository.DefaultRunEngineRepository
 import com.boksl.running.data.repository.DefaultRunningRepository
+import com.boksl.running.domain.repository.ExportRepository
 import com.boksl.running.domain.repository.ProfileRepository
 import com.boksl.running.domain.repository.RunEngineRepository
 import com.boksl.running.domain.repository.RunningRepository
@@ -84,6 +86,11 @@ object DataModule {
     @Singleton
     fun provideProfileRepository(profilePreferencesDataSource: ProfilePreferencesDataSource): ProfileRepository =
         DefaultProfileRepository(profilePreferencesDataSource)
+
+    @Provides
+    @Singleton
+    fun provideExportRepository(defaultExportRepository: DefaultExportRepository): ExportRepository =
+        defaultExportRepository
 
     @Provides
     @Singleton
