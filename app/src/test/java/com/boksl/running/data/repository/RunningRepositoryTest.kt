@@ -5,6 +5,7 @@ import androidx.paging.testing.asSnapshot
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.boksl.running.data.local.db.AppDatabase
+import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.RunStats
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.SessionStatus
@@ -21,6 +22,12 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Clock
+import java.time.Instant
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 
 @RunWith(RobolectricTestRunner::class)
 class RunningRepositoryTest {
@@ -36,6 +43,7 @@ class RunningRepositoryTest {
                 runningSessionDao = database.runningSessionDao(),
                 trackPointDao = database.trackPointDao(),
                 ioDispatcher = Dispatchers.IO,
+                clock = FIXED_CLOCK,
             )
     }
 
@@ -286,4 +294,117 @@ class RunningRepositoryTest {
 
             assertEquals(listOf("saved-new", "saved-old"), savedSessions.map { it.externalId })
         }
+
+    @Test
+    fun observeMonthlyStatsIncludesRecentMonthsAndFillsMissingBuckets() =
+        runTest {
+            repository.insertSession(
+                savedSession(
+                    externalId = "oct",
+                    startedAtEpochMillis = localEpochMillis(year = 2025, month = 10, dayOfMonth = 12),
+                    durationMillis = 600_000L,
+                    distanceMeters = 2_400.0,
+                ),
+            )
+            repository.insertSession(
+                savedSession(
+                    externalId = "jan",
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 1, dayOfMonth = 8),
+                    durationMillis = 300_000L,
+                    distanceMeters = 900.0,
+                ),
+            )
+            repository.insertSession(
+                savedSession(
+                    externalId = "feb-a",
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 5),
+                    durationMillis = 600_000L,
+                    distanceMeters = 1_800.0,
+                ),
+            )
+            repository.insertSession(
+                savedSession(
+                    externalId = "feb-b",
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 17),
+                    durationMillis = 300_000L,
+                    distanceMeters = 1_200.0,
+                ),
+            )
+            repository.insertSession(
+                RunningSession(
+                    externalId = "discarded-feb",
+                    status = SessionStatus.DISCARDED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 19),
+                    endedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 19) + 600_000L,
+                    stats = RunStats(600_000L, 3_000.0, 200.0, 5.0, null),
+                    createdAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 19),
+                    updatedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 19) + 600_000L,
+                ),
+            )
+
+            val monthlyStats = repository.observeMonthlyStats(monthCount = 6).first()
+
+            assertEquals(
+                listOf(
+                    YearMonth.of(2025, 10),
+                    YearMonth.of(2025, 11),
+                    YearMonth.of(2025, 12),
+                    YearMonth.of(2026, 1),
+                    YearMonth.of(2026, 2),
+                    YearMonth.of(2026, 3),
+                ),
+                monthlyStats.map(MonthlyStatsPoint::yearMonth),
+            )
+            assertEquals(0.0, monthlyStats[1].totalDistanceMeters, 0.0)
+            assertEquals(0L, monthlyStats[1].totalDurationMillis)
+            assertEquals(0.0, monthlyStats[1].averageSpeedMps, 0.0)
+            assertEquals(3_000.0, monthlyStats[4].totalDistanceMeters, 0.0)
+            assertEquals(900_000L, monthlyStats[4].totalDurationMillis)
+            assertEquals(3.3333333333333335, monthlyStats[4].averageSpeedMps, 0.000001)
+            assertEquals(0.0, monthlyStats[5].totalDistanceMeters, 0.0)
+        }
+
+    @Test
+    fun observeMonthlyStatsRejectsNonPositiveMonthCount() =
+        runTest {
+            try {
+                repository.observeMonthlyStats(monthCount = 0)
+            } catch (exception: IllegalArgumentException) {
+                assertEquals("monthCount must be > 0.", exception.message)
+                return@runTest
+            }
+
+            error("Expected IllegalArgumentException")
+        }
+
+    private fun savedSession(
+        externalId: String,
+        startedAtEpochMillis: Long,
+        durationMillis: Long,
+        distanceMeters: Double,
+    ): RunningSession =
+        RunningSession(
+            externalId = externalId,
+            status = SessionStatus.SAVED,
+            startedAtEpochMillis = startedAtEpochMillis,
+            endedAtEpochMillis = startedAtEpochMillis + durationMillis,
+            stats = RunStats(durationMillis, distanceMeters, 300.0, 4.0, null),
+            createdAtEpochMillis = startedAtEpochMillis,
+            updatedAtEpochMillis = startedAtEpochMillis + durationMillis,
+        )
+
+    private fun localEpochMillis(
+        year: Int,
+        month: Int,
+        dayOfMonth: Int,
+    ): Long =
+        ZonedDateTime
+            .of(year, month, dayOfMonth, 12, 0, 0, 0, TEST_ZONE_ID)
+            .toInstant()
+            .toEpochMilli()
+
+    private companion object {
+        val TEST_ZONE_ID: ZoneId = ZoneId.of("Asia/Seoul")
+        val FIXED_CLOCK: Clock = Clock.fixed(Instant.parse("2026-03-07T00:00:00Z"), ZoneOffset.UTC)
+    }
 }

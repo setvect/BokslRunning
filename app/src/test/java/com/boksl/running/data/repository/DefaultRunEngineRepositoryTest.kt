@@ -7,6 +7,7 @@ import com.boksl.running.domain.model.AppPreferences
 import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.HomeSummary
 import com.boksl.running.domain.model.LocationSample
+import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.Profile
 import com.boksl.running.domain.model.RunEngineState
 import com.boksl.running.domain.model.RunStats
@@ -156,6 +157,8 @@ private class FakeRunningRepository(
     private var nextSessionId = (sessions.keys.maxOrNull() ?: 0L) + 1L
 
     override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
+
+    override fun observeMonthlyStats(monthCount: Int): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 
     override fun observeSession(sessionId: Long): Flow<RunningSession?> = flowOf(sessions[sessionId])
 

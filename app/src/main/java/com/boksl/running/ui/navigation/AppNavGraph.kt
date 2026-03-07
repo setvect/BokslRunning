@@ -44,6 +44,7 @@ import com.boksl.running.ui.feature.run.runReadyScreen
 import com.boksl.running.ui.feature.run.runSummaryScreen
 import com.boksl.running.ui.feature.settings.settingsScreen
 import com.boksl.running.ui.feature.stats.statsScreen
+import com.boksl.running.ui.feature.stats.StatsViewModel
 
 @Composable
 fun appNavGraph(modifier: Modifier = Modifier) {
@@ -306,7 +307,14 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             )
         }
         composable(route = AppRoute.Stats.route) {
-            statsScreen(onNavigateUp = { navController.navigateUp() })
+            val viewModel: StatsViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            statsScreen(
+                uiState = uiState,
+                onMetricSelected = viewModel::onMetricSelected,
+                onNavigateUp = { navController.navigateUp() },
+            )
         }
         composable(route = AppRoute.Settings.route) {
             settingsScreen(

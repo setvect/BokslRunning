@@ -86,6 +86,8 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     implementation(libs.play.services.location)
     implementation(libs.google.maps.compose)
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
 
     kapt(libs.hilt.compiler)
     kapt(libs.androidx.room.compiler)

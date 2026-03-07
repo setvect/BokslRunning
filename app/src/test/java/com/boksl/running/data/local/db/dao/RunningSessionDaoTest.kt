@@ -18,6 +18,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 @RunWith(RobolectricTestRunner::class)
 class RunningSessionDaoTest {
@@ -231,6 +233,59 @@ class RunningSessionDaoTest {
             assertTrue(summary?.totalCaloriesKcal == null || summary.totalCaloriesKcal == 0.0)
         }
 
+    @Test
+    fun observeMonthlyStatsAggregatesSavedSessionsByLocalMonthOnly() =
+        runTest {
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-jan-1",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 1, dayOfMonth = 10),
+                ).copy(
+                    durationMillis = 600_000L,
+                    distanceMeters = 2_000.0,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-jan-2",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 1, dayOfMonth = 23),
+                ).copy(
+                    durationMillis = 300_000L,
+                    distanceMeters = 1_000.0,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-feb",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 5),
+                ).copy(
+                    durationMillis = 900_000L,
+                    distanceMeters = 4_000.0,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "discarded-feb",
+                    status = SessionStatus.DISCARDED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 20),
+                ).copy(
+                    durationMillis = 800_000L,
+                    distanceMeters = 5_000.0,
+                ),
+            )
+
+            val monthlyStats = runningSessionDao.observeMonthlyStats().first()
+
+            assertEquals(listOf("2026-02", "2026-01"), monthlyStats.map { it.yearMonth })
+            assertEquals(4_000.0, monthlyStats[0].totalDistanceMeters ?: 0.0, 0.0)
+            assertEquals(900_000L, monthlyStats[0].totalDurationMillis ?: 0L)
+            assertEquals(3_000.0, monthlyStats[1].totalDistanceMeters ?: 0.0, 0.0)
+            assertEquals(900_000L, monthlyStats[1].totalDurationMillis ?: 0L)
+        }
+
     private fun runningSessionEntity(
         externalId: String,
         status: SessionStatus,
@@ -249,4 +304,14 @@ class RunningSessionDaoTest {
             createdAtEpochMillis = startedAtEpochMillis,
             updatedAtEpochMillis = startedAtEpochMillis,
         )
+
+    private fun localEpochMillis(
+        year: Int,
+        month: Int,
+        dayOfMonth: Int,
+    ): Long =
+        ZonedDateTime
+            .of(year, month, dayOfMonth, 12, 0, 0, 0, ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
 }

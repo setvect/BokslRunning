@@ -24,6 +24,20 @@ interface RunningSessionDao {
     )
     fun observeHomeSummary(status: SessionStatus = SessionStatus.SAVED): Flow<HomeSummaryProjection?>
 
+    @Query(
+        """
+        SELECT
+            strftime('%Y-%m', started_at_epoch_millis / 1000, 'unixepoch', 'localtime') AS yearMonth,
+            SUM(distance_meters) AS totalDistanceMeters,
+            SUM(duration_millis) AS totalDurationMillis
+        FROM running_sessions
+        WHERE status = :status
+        GROUP BY yearMonth
+        ORDER BY yearMonth DESC
+        """,
+    )
+    fun observeMonthlyStats(status: SessionStatus = SessionStatus.SAVED): Flow<List<MonthlyStatsProjection>>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: RunningSessionEntity): Long
 

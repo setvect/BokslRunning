@@ -22,6 +22,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
+import java.time.Clock
 import javax.inject.Singleton
 
 @Module
@@ -49,12 +50,18 @@ object DataModule {
         runningSessionDao: RunningSessionDao,
         trackPointDao: TrackPointDao,
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
+        clock: Clock,
     ): RunningRepository =
         DefaultRunningRepository(
             runningSessionDao = runningSessionDao,
             trackPointDao = trackPointDao,
             ioDispatcher = ioDispatcher,
+            clock = clock,
         )
+
+    @Provides
+    @Singleton
+    fun provideClock(): Clock = Clock.systemDefaultZone()
 
     @Provides
     @Singleton

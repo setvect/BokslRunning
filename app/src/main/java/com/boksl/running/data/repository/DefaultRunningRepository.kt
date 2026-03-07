@@ -6,11 +6,13 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.boksl.running.core.di.IoDispatcher
 import com.boksl.running.data.local.db.dao.HomeSummaryProjection
+import com.boksl.running.data.local.db.dao.MonthlyStatsProjection
 import com.boksl.running.data.local.db.dao.RunningSessionDao
 import com.boksl.running.data.local.db.dao.TrackPointDao
 import com.boksl.running.data.mapper.toDomain
 import com.boksl.running.data.mapper.toEntity
 import com.boksl.running.domain.model.HomeSummary
+import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.RunStats
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.SessionStatus
@@ -21,6 +23,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.time.Clock
+import java.time.YearMonth
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,12 +37,26 @@ class DefaultRunningRepository
         private val runningSessionDao: RunningSessionDao,
         private val trackPointDao: TrackPointDao,
         @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        private val clock: Clock,
     ) : RunningRepository {
         override fun observeHomeSummary(): Flow<HomeSummary> =
             runningSessionDao
                 .observeHomeSummary()
                 .map { projection -> projection.toHomeSummary() }
                 .flowOn(ioDispatcher)
+
+        override fun observeMonthlyStats(monthCount: Int): Flow<List<MonthlyStatsPoint>> {
+            require(monthCount > 0) { "monthCount must be > 0." }
+
+            return runningSessionDao
+                .observeMonthlyStats()
+                .map { projections ->
+                    projections.toMonthlyStats(
+                        monthCount = monthCount,
+                        currentMonth = YearMonth.now(clock),
+                    )
+                }.flowOn(ioDispatcher)
+        }
 
         override fun observeSession(sessionId: Long): Flow<RunningSession?> =
             runningSessionDao
@@ -201,5 +219,49 @@ private fun HomeSummaryProjection?.toHomeSummary(): HomeSummary {
         totalDurationMillis = totalDurationMillis,
         averageSpeedMps = averageSpeedMps,
         totalCaloriesKcal = totalCaloriesKcal,
+    )
+}
+
+private fun List<MonthlyStatsProjection>.toMonthlyStats(
+    monthCount: Int,
+    currentMonth: YearMonth,
+): List<MonthlyStatsPoint> {
+    val months =
+        (monthCount - 1 downTo 0).map { offset ->
+            currentMonth.minusMonths(offset.toLong())
+        }
+
+    val aggregatedByMonth =
+        associate { projection ->
+            val month = YearMonth.parse(projection.yearMonth)
+            month to projection.toMonthlyStatsPoint(month)
+        }
+
+    return months.map { month ->
+        aggregatedByMonth[month]
+            ?: MonthlyStatsPoint(
+                yearMonth = month,
+                totalDistanceMeters = 0.0,
+                totalDurationMillis = 0L,
+                averageSpeedMps = 0.0,
+            )
+    }
+}
+
+private fun MonthlyStatsProjection.toMonthlyStatsPoint(yearMonth: YearMonth): MonthlyStatsPoint {
+    val totalDistanceMeters = totalDistanceMeters ?: 0.0
+    val totalDurationMillis = totalDurationMillis ?: 0L
+    val averageSpeedMps =
+        if (totalDurationMillis > 0L) {
+            totalDistanceMeters / (totalDurationMillis / 1_000.0)
+        } else {
+            0.0
+        }
+
+    return MonthlyStatsPoint(
+        yearMonth = yearMonth,
+        totalDistanceMeters = totalDistanceMeters,
+        totalDurationMillis = totalDurationMillis,
+        averageSpeedMps = averageSpeedMps,
     )
 }
