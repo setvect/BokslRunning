@@ -78,7 +78,7 @@
   - 홈 누적 요약 카드 구현 완료: 저장된 세션 기준 거리/시간/평균 속도/칼로리 집계 연결
   - Phase 2 단위 테스트 추가: 앱 시작 상태, 프로필 폼 검증, 홈 요약 집계, 권한 상태 매핑
 
-- [ ] **Phase 3. 러닝 코어(기록 엔진) 구현**
+- [x] **Phase 3. 러닝 코어(기록 엔진) 구현**
 
 - 목표: 실제 러닝 데이터가 누락 없이 쌓이는 핵심 엔진을 만든다.
 - 주요 작업:
@@ -89,6 +89,13 @@
 - 산출물:
   - 러닝 시작/진행/종료 저장까지 백엔드 로직 완성
   - 앱 재실행 시 진행 세션 복구 가능
+- 완료 내역 (2026-03-07):
+  - `RunEngineRepository` 기반 상태 머신 구현 완료: `Ready -> Running -> StopConfirm -> Saved`
+  - Foreground Service + `FusedLocationProviderClient` 기반 위치 수집 루프 구현 완료
+  - 거리/pace/최고속도/칼로리 계산 유틸 및 5초 flush 저장 정책 구현 완료
+  - 활성 세션 복구 구현 완료: `IN_PROGRESS` 세션과 기존 트랙포인트 기반 snapshot 복원
+  - 최소 런 라우트 placeholder 연결 완료: `RunReady`, `RunLive`, `RunSummary`
+  - Phase 3 단위 테스트 추가: 계산 유틸, 앱 시작 active session 분기, 엔진 상태 전이/복구
 
 - [ ] **Phase 4. 러닝 UI 연동**
 

@@ -16,13 +16,13 @@ class AppLaunchViewModelTest {
                 updatedAtEpochMillis = 1_000L,
             )
 
-        val state = resolveAppLaunchUiState(profile = profile, onboardingCompleted = true)
+        val state = resolveAppLaunchUiState(profile = profile, onboardingCompleted = true, hasActiveRun = false)
         assertEquals(AppLaunchUiState.Ready, state)
     }
 
     @Test
     fun resolveToOnboardingWhenProfileMissingAndOnboardingNotCompleted() {
-        val state = resolveAppLaunchUiState(profile = null, onboardingCompleted = false)
+        val state = resolveAppLaunchUiState(profile = null, onboardingCompleted = false, hasActiveRun = false)
         assertEquals(AppLaunchUiState.NeedsOnboarding, state)
     }
 
@@ -38,8 +38,21 @@ class AppLaunchViewModelTest {
                         updatedAtEpochMillis = 2_000L,
                     ),
                 onboardingCompleted = false,
+                hasActiveRun = false,
             )
 
         assertEquals(AppLaunchUiState.NeedsLocationPermission, state)
+    }
+
+    @Test
+    fun resolveToActiveRunWhenInProgressSessionExists() {
+        val state =
+            resolveAppLaunchUiState(
+                profile = null,
+                onboardingCompleted = false,
+                hasActiveRun = true,
+            )
+
+        assertEquals(AppLaunchUiState.HasActiveRun, state)
     }
 }

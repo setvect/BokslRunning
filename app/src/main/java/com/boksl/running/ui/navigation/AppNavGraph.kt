@@ -33,6 +33,10 @@ import com.boksl.running.ui.feature.permission.locationPermissionGateScreen
 import com.boksl.running.ui.feature.permission.locationPermissions
 import com.boksl.running.ui.feature.permission.openAppSettings
 import com.boksl.running.ui.feature.permission.shouldShowLocationPermissionRationale
+import com.boksl.running.ui.feature.run.RunSessionViewModel
+import com.boksl.running.ui.feature.run.runLiveScreen
+import com.boksl.running.ui.feature.run.runReadyScreen
+import com.boksl.running.ui.feature.run.runSummaryScreen
 import com.boksl.running.ui.feature.settings.settingsScreen
 import com.boksl.running.ui.feature.stats.statsScreen
 
@@ -56,6 +60,7 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                         AppLaunchUiState.NeedsProfile ->
                             AppRoute.ProfileSetup.createRoute(ProfileSetupEntryPoint.Onboarding.routeValue)
                         AppLaunchUiState.NeedsLocationPermission -> AppRoute.LocationPermissionGate.route
+                        AppLaunchUiState.HasActiveRun -> AppRoute.RunLive.route
                         AppLaunchUiState.Ready -> AppRoute.Home.route
                     }
 
@@ -159,10 +164,14 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             homeScreen(
                 uiState = uiState,
                 onStartRun = {
-                    viewModel.onRunStartRequested(
-                        hasLocationPermission = hasLocationPermission(context),
-                        shouldShowRationale = activity?.let(::shouldShowLocationPermissionRationale) ?: false,
-                    )
+                    if (hasLocationPermission(context)) {
+                        navController.navigate(AppRoute.RunReady.route)
+                    } else {
+                        viewModel.onRunStartRequested(
+                            hasLocationPermission = false,
+                            shouldShowRationale = activity?.let(::shouldShowLocationPermissionRationale) ?: false,
+                        )
+                    }
                 },
                 onOpenHistory = { navController.navigate(AppRoute.History.route) },
                 onOpenStats = { navController.navigate(AppRoute.Stats.route) },
@@ -173,6 +182,65 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                     viewModel.dismissPermissionDialog()
                 },
                 onDismissRunPlaceholder = viewModel::dismissRunPlaceholder,
+            )
+        }
+        composable(route = AppRoute.RunReady.route) {
+            val viewModel: RunSessionViewModel = hiltViewModel()
+            val snapshot by viewModel.snapshot.collectAsState()
+
+            LaunchedEffect(Unit) {
+                viewModel.prepareRun()
+            }
+
+            runReadyScreen(
+                snapshot = snapshot,
+                onStartRun = {
+                    viewModel.startRun()
+                    navController.navigate(AppRoute.RunLive.route) {
+                        popUpTo(AppRoute.RunReady.route) { inclusive = true }
+                    }
+                },
+                onCancel = {
+                    viewModel.discardRun()
+                    navController.navigateUp()
+                },
+            )
+        }
+        composable(route = AppRoute.RunLive.route) {
+            val viewModel: RunSessionViewModel = hiltViewModel()
+            val snapshot by viewModel.snapshot.collectAsState()
+
+            LaunchedEffect(Unit) {
+                viewModel.resumeActiveRun()
+            }
+
+            LaunchedEffect(snapshot?.state) {
+                if (snapshot?.state == com.boksl.running.domain.model.RunEngineState.SAVED) {
+                    navController.navigate(AppRoute.RunSummary.route) {
+                        popUpTo(AppRoute.RunLive.route) { inclusive = true }
+                    }
+                }
+            }
+
+            runLiveScreen(
+                snapshot = snapshot,
+                onRequestStop = viewModel::requestStop,
+                onConfirmSave = viewModel::confirmSave,
+                onCancelStop = viewModel::cancelStop,
+            )
+        }
+        composable(route = AppRoute.RunSummary.route) {
+            val viewModel: RunSessionViewModel = hiltViewModel()
+            val snapshot by viewModel.snapshot.collectAsState()
+
+            runSummaryScreen(
+                snapshot = snapshot,
+                onComplete = {
+                    navController.navigate(AppRoute.Home.route) {
+                        popUpTo(AppRoute.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable(route = AppRoute.History.route) {

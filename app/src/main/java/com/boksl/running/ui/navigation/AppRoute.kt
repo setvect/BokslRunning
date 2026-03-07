@@ -13,6 +13,12 @@ sealed class AppRoute(val route: String) {
         fun createRoute(entryPoint: String): String = "profile_setup/$entryPoint"
     }
 
+    data object RunReady : AppRoute("run_ready")
+
+    data object RunLive : AppRoute("run_live")
+
+    data object RunSummary : AppRoute("run_summary")
+
     data object Home : AppRoute("home")
 
     data object Settings : AppRoute("settings")
