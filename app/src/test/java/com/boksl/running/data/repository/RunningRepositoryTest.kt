@@ -296,8 +296,16 @@ class RunningRepositoryTest {
         }
 
     @Test
-    fun observeMonthlyStatsIncludesRecentMonthsAndFillsMissingBuckets() =
+    fun observeMonthlyStatsReturnsFullHistoryRangeAndFillsMissingBuckets() =
         runTest {
+            repository.insertSession(
+                savedSession(
+                    externalId = "aug",
+                    startedAtEpochMillis = localEpochMillis(year = 2025, month = 8, dayOfMonth = 21),
+                    durationMillis = 480_000L,
+                    distanceMeters = 1_600.0,
+                ),
+            )
             repository.insertSession(
                 savedSession(
                     externalId = "oct",
@@ -342,7 +350,35 @@ class RunningRepositoryTest {
                 ),
             )
 
-            val monthlyStats = repository.observeMonthlyStats(monthCount = 6).first()
+            val monthlyStats = repository.observeMonthlyStats().first()
+
+            assertEquals(
+                listOf(
+                    YearMonth.of(2025, 8),
+                    YearMonth.of(2025, 9),
+                    YearMonth.of(2025, 10),
+                    YearMonth.of(2025, 11),
+                    YearMonth.of(2025, 12),
+                    YearMonth.of(2026, 1),
+                    YearMonth.of(2026, 2),
+                    YearMonth.of(2026, 3),
+                ),
+                monthlyStats.map(MonthlyStatsPoint::yearMonth),
+            )
+            assertEquals(1_600.0, monthlyStats[0].totalDistanceMeters, 0.0)
+            assertEquals(0.0, monthlyStats[1].totalDistanceMeters, 0.0)
+            assertEquals(0L, monthlyStats[1].totalDurationMillis)
+            assertEquals(0.0, monthlyStats[1].averageSpeedMps, 0.0)
+            assertEquals(3_000.0, monthlyStats[6].totalDistanceMeters, 0.0)
+            assertEquals(900_000L, monthlyStats[6].totalDurationMillis)
+            assertEquals(3.3333333333333335, monthlyStats[6].averageSpeedMps, 0.000001)
+            assertEquals(0.0, monthlyStats[7].totalDistanceMeters, 0.0)
+        }
+
+    @Test
+    fun observeMonthlyStatsReturnsLatestSixMonthsWhenNoSavedSessions() =
+        runTest {
+            val monthlyStats = repository.observeMonthlyStats().first()
 
             assertEquals(
                 listOf(
@@ -355,26 +391,8 @@ class RunningRepositoryTest {
                 ),
                 monthlyStats.map(MonthlyStatsPoint::yearMonth),
             )
-            assertEquals(0.0, monthlyStats[1].totalDistanceMeters, 0.0)
-            assertEquals(0L, monthlyStats[1].totalDurationMillis)
-            assertEquals(0.0, monthlyStats[1].averageSpeedMps, 0.0)
-            assertEquals(3_000.0, monthlyStats[4].totalDistanceMeters, 0.0)
-            assertEquals(900_000L, monthlyStats[4].totalDurationMillis)
-            assertEquals(3.3333333333333335, monthlyStats[4].averageSpeedMps, 0.000001)
-            assertEquals(0.0, monthlyStats[5].totalDistanceMeters, 0.0)
-        }
-
-    @Test
-    fun observeMonthlyStatsRejectsNonPositiveMonthCount() =
-        runTest {
-            try {
-                repository.observeMonthlyStats(monthCount = 0)
-            } catch (exception: IllegalArgumentException) {
-                assertEquals("monthCount must be > 0.", exception.message)
-                return@runTest
-            }
-
-            error("Expected IllegalArgumentException")
+            assertTrue(monthlyStats.all { it.totalDistanceMeters == 0.0 })
+            assertTrue(monthlyStats.all { it.totalDurationMillis == 0L })
         }
 
     private fun savedSession(

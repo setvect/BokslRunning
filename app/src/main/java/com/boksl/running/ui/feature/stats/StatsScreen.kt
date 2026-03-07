@@ -3,13 +3,12 @@ package com.boksl.running.ui.feature.stats
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.StatsChartMetric
@@ -38,20 +38,36 @@ import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.column.columnChart
+import com.patrykandpatrick.vico.compose.chart.layout.segmented
+import com.patrykandpatrick.vico.compose.chart.scroll.rememberChartScrollSpec
+import com.patrykandpatrick.vico.compose.chart.scroll.rememberChartScrollState
+import com.patrykandpatrick.vico.compose.component.lineComponent
+import com.patrykandpatrick.vico.compose.component.marker.markerComponent
+import com.patrykandpatrick.vico.compose.component.shapeComponent
+import com.patrykandpatrick.vico.compose.component.textComponent
 import com.patrykandpatrick.vico.compose.m3.style.m3ChartStyle
 import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
 import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import com.patrykandpatrick.vico.core.axis.AxisPosition
+import com.patrykandpatrick.vico.core.chart.layout.HorizontalLayout
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
+import com.patrykandpatrick.vico.core.component.shape.Shapes
 import com.patrykandpatrick.vico.core.chart.values.ChartValues
+import com.patrykandpatrick.vico.core.entry.ChartEntryModel
+import com.patrykandpatrick.vico.core.component.marker.MarkerComponent
 import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
 import com.patrykandpatrick.vico.core.entry.FloatEntry
+import com.patrykandpatrick.vico.core.marker.Marker
+import com.patrykandpatrick.vico.core.marker.MarkerLabelFormatter
+import com.patrykandpatrick.vico.core.marker.MarkerVisibilityChangeListener
+import com.patrykandpatrick.vico.core.scroll.InitialScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun statsScreen(
     uiState: StatsUiState,
     onMetricSelected: (StatsChartMetric) -> Unit,
+    onMonthSelected: (Int) -> Unit,
     onNavigateUp: () -> Unit,
 ) {
     Scaffold(
@@ -79,6 +95,7 @@ fun statsScreen(
             monthlyChartCard(
                 uiState = uiState,
                 onMetricSelected = onMetricSelected,
+                onMonthSelected = onMonthSelected,
             )
         }
     }
@@ -106,6 +123,7 @@ private fun summaryCard(uiState: StatsUiState) {
 private fun monthlyChartCard(
     uiState: StatsUiState,
     onMetricSelected: (StatsChartMetric) -> Unit,
+    onMonthSelected: (Int) -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -121,7 +139,7 @@ private fun monthlyChartCard(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
-                    text = "최근 6개월",
+                    text = uiState.chartSubtitle(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -130,32 +148,22 @@ private fun monthlyChartCard(
                 selectedMetric = uiState.selectedMetric,
                 onMetricSelected = onMetricSelected,
             )
-            if (uiState.hasRecordedSessions) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    monthlyStatsChart(
-                        monthlyStats = uiState.monthlyStats,
-                        selectedMetric = uiState.selectedMetric,
-                    )
-                    monthlyChartLegend(
-                        monthlyStats = uiState.monthlyStats,
-                        selectedMetric = uiState.selectedMetric,
-                    )
-                }
-            } else {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                            .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                monthlyStatsChart(
+                    uiState = uiState,
+                    onMonthSelected = onMonthSelected,
+                )
+                selectedMonthDetailCard(
+                    selectedMonth = uiState.selectedMonth,
+                    selectedMetric = uiState.selectedMetric,
+                )
+                if (!uiState.hasRecordedSessions) {
                     Text(
-                        text = "저장된 러닝 기록이 없습니다",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "저장된 기록이 없어 최근 6개월을 0값으로 표시합니다",
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -183,10 +191,37 @@ private fun metricTabs(
 
 @Composable
 private fun monthlyStatsChart(
-    monthlyStats: List<MonthlyStatsPoint>,
-    selectedMetric: StatsChartMetric,
+    uiState: StatsUiState,
+    onMonthSelected: (Int) -> Unit,
 ) {
+    val monthlyStats = uiState.monthlyStats
+    val selectedMetric = uiState.selectedMetric
     val modelProducer = remember { ChartEntryModelProducer(listOf(FloatEntry(0f, 0f))) }
+    val chartScrollState = rememberChartScrollState()
+    val chartScrollSpec =
+        rememberChartScrollSpec<ChartEntryModel>(
+            isScrollEnabled = monthlyStats.size > uiState.initialVisibleMonthCount,
+            initialScroll = InitialScroll.End,
+        )
+    val marker = rememberStatsMarker(selectedMetric = selectedMetric)
+    val markerVisibilityChangeListener =
+        remember(onMonthSelected) {
+            object : MarkerVisibilityChangeListener {
+                override fun onMarkerShown(
+                    marker: Marker,
+                    markerEntryModels: List<Marker.EntryModel>,
+                ) {
+                    markerEntryModels.firstOrNull()?.index?.let(onMonthSelected)
+                }
+
+                override fun onMarkerMoved(
+                    marker: Marker,
+                    markerEntryModels: List<Marker.EntryModel>,
+                ) {
+                    markerEntryModels.firstOrNull()?.index?.let(onMonthSelected)
+                }
+            }
+        }
     val chartValues = remember(monthlyStats, selectedMetric) { monthlyStats.map { it.chartValue(selectedMetric) } }
     val xLabels = remember(monthlyStats) { monthlyStats.map { it.yearMonth.formatYearMonthLabel() } }
     val startAxisValueFormatter =
@@ -207,21 +242,32 @@ private fun monthlyStatsChart(
                 FloatEntry(x = index.toFloat(), y = value.toFloat())
             }
         }
+    val columnComponent =
+        lineComponent(
+            color = MaterialTheme.colorScheme.primary,
+            thickness = 18.dp,
+            shape = Shapes.roundedCornerShape(allPercent = 40),
+        )
 
-    LaunchedEffect(chartValues, modelProducer) {
+    LaunchedEffect(chartEntries, modelProducer) {
         modelProducer.setEntries(chartEntries)
     }
 
     ProvideChartStyle(chartStyle = m3ChartStyle()) {
         Chart(
-            chart = columnChart(),
+            chart = columnChart(columns = listOf(columnComponent), spacing = 20.dp),
             chartModelProducer = modelProducer,
+            chartScrollSpec = chartScrollSpec,
+            chartScrollState = chartScrollState,
             startAxis = rememberStartAxis(valueFormatter = startAxisValueFormatter),
             bottomAxis =
                 rememberBottomAxis(
                     valueFormatter = bottomAxisValueFormatter,
                     itemPlacer = remember { AxisItemPlacer.Horizontal.default(spacing = 1) },
                 ),
+            marker = marker,
+            markerVisibilityChangeListener = markerVisibilityChangeListener,
+            horizontalLayout = HorizontalLayout.segmented(),
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -231,26 +277,31 @@ private fun monthlyStatsChart(
 }
 
 @Composable
-private fun monthlyChartLegend(
-    monthlyStats: List<MonthlyStatsPoint>,
+private fun selectedMonthDetailCard(
+    selectedMonth: MonthlyStatsPoint?,
     selectedMetric: StatsChartMetric,
 ) {
-    Row(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        shape = RoundedCornerShape(16.dp),
     ) {
-        monthlyStats.forEach { point ->
-            Column(modifier = Modifier.width(44.dp)) {
-                Text(
-                    text = point.yearMonth.formatYearMonthLabel(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = point.formatValue(selectedMetric),
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "선택 월 상세",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = selectedMonth?.yearMonth?.formatYearMonthLabel() ?: "--.--",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = selectedMonth?.formatValue(selectedMetric) ?: "--",
+                style = MaterialTheme.typography.headlineSmall,
+            )
         }
     }
 }
@@ -265,6 +316,42 @@ private fun statsSummaryRow(
         Text(text = value, style = MaterialTheme.typography.titleSmall)
     }
 }
+
+@Composable
+private fun rememberStatsMarker(selectedMetric: StatsChartMetric): MarkerComponent {
+    val background =
+        shapeComponent(
+            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(12.dp),
+            strokeWidth = 1.dp,
+            strokeColor = MaterialTheme.colorScheme.outlineVariant,
+        )
+    val label =
+        textComponent(
+            color = MaterialTheme.colorScheme.onSurface,
+            background = background,
+        )
+    val indicator = shapeComponent(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(8.dp))
+    val guideline = lineComponent(color = MaterialTheme.colorScheme.primary, thickness = 2.dp)
+
+    return markerComponent(
+        label = label,
+        indicator = indicator,
+        guideline = guideline,
+    ).apply {
+        labelFormatter =
+            MarkerLabelFormatter { markedEntries, _ ->
+                markedEntries.firstOrNull()?.entry?.y?.toDouble()?.formatForMarker(selectedMetric).orEmpty()
+            }
+    }
+}
+
+private fun StatsUiState.chartSubtitle(): String =
+    if (monthlyStats.size > initialVisibleMonthCount) {
+        "최신 ${initialVisibleMonthCount}개월부터 시작 · 좌우 스와이프"
+    } else {
+        "최근 ${initialVisibleMonthCount}개월"
+    }
 
 private fun StatsChartMetric.toTabLabel(): String =
     when (this) {
@@ -292,4 +379,11 @@ private fun Double.formatForAxis(metric: StatsChartMetric): String =
         StatsChartMetric.DISTANCE -> String.format("%.1f", this)
         StatsChartMetric.DURATION -> toLong().formatChartDurationLabel()
         StatsChartMetric.AVERAGE_SPEED -> String.format("%.1f", this)
+    }
+
+private fun Double.formatForMarker(metric: StatsChartMetric): String =
+    when (metric) {
+        StatsChartMetric.DISTANCE -> formatStatsChartValue(metric)
+        StatsChartMetric.DURATION -> toLong().formatStatsChartValue(metric)
+        StatsChartMetric.AVERAGE_SPEED -> formatStatsChartValue(metric)
     }

@@ -184,7 +184,7 @@ private class FakeRunningRepository(
 
     override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
 
-    override fun observeMonthlyStats(monthCount: Int): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
+    override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 
     override fun observeSession(sessionId: Long): Flow<RunningSession?> = sessionState
 

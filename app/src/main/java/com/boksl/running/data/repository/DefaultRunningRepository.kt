@@ -45,18 +45,14 @@ class DefaultRunningRepository
                 .map { projection -> projection.toHomeSummary() }
                 .flowOn(ioDispatcher)
 
-        override fun observeMonthlyStats(monthCount: Int): Flow<List<MonthlyStatsPoint>> {
-            require(monthCount > 0) { "monthCount must be > 0." }
-
-            return runningSessionDao
+        override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> =
+            runningSessionDao
                 .observeMonthlyStats()
                 .map { projections ->
                     projections.toMonthlyStats(
-                        monthCount = monthCount,
                         currentMonth = YearMonth.now(clock),
                     )
                 }.flowOn(ioDispatcher)
-        }
 
         override fun observeSession(sessionId: Long): Flow<RunningSession?> =
             runningSessionDao
@@ -223,13 +219,13 @@ private fun HomeSummaryProjection?.toHomeSummary(): HomeSummary {
 }
 
 private fun List<MonthlyStatsProjection>.toMonthlyStats(
-    monthCount: Int,
     currentMonth: YearMonth,
 ): List<MonthlyStatsPoint> {
-    val months =
-        (monthCount - 1 downTo 0).map { offset ->
-            currentMonth.minusMonths(offset.toLong())
-        }
+    val minimumStartMonth = currentMonth.minusMonths(MINIMUM_MONTH_COUNT.toLong() - 1L)
+    val firstMonth = minOfOrNull { projection -> YearMonth.parse(projection.yearMonth) } ?: minimumStartMonth
+    val startMonth = minOf(firstMonth, minimumStartMonth)
+    val monthCount = startMonth.monthsUntilInclusive(currentMonth)
+    val months = (0 until monthCount).map { offset -> startMonth.plusMonths(offset.toLong()) }
 
     val aggregatedByMonth =
         associate { projection ->
@@ -247,6 +243,11 @@ private fun List<MonthlyStatsProjection>.toMonthlyStats(
             )
     }
 }
+
+private fun YearMonth.monthsUntilInclusive(other: YearMonth): Int =
+    ((other.year - year) * 12 + other.monthValue - monthValue) + 1
+
+private const val MINIMUM_MONTH_COUNT = 6
 
 private fun MonthlyStatsProjection.toMonthlyStatsPoint(yearMonth: YearMonth): MonthlyStatsPoint {
     val totalDistanceMeters = totalDistanceMeters ?: 0.0

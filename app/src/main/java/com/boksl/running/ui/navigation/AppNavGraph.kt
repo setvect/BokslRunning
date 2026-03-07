@@ -313,6 +313,7 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             statsScreen(
                 uiState = uiState,
                 onMetricSelected = viewModel::onMetricSelected,
+                onMonthSelected = viewModel::onMonthSelected,
                 onNavigateUp = { navController.navigateUp() },
             )
         }

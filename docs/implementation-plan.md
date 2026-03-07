@@ -137,9 +137,9 @@
   - 스토리보드 10 구간 동작
   - 신규 기록 반영 시 통계 갱신
 - 완료 내역 (2026-03-07):
-  - 월별 통계 도메인/저장소 계약 추가 완료: `MonthlyStatsPoint`, `StatsChartMetric`, `observeMonthlyStats(6)`
+  - 월별 통계 도메인/저장소 계약 추가 완료: `MonthlyStatsPoint`, `StatsChartMetric`, `observeMonthlyStats()`
   - Room 월별 집계 쿼리 구현 완료: `SAVED` 세션 기준 로컬 타임존 월 그룹핑 + 빈 달 0 버킷 보정
-  - 통계 화면 구현 완료: 누적 요약 카드, 최근 6개월 탭 전환형 차트, 빈 상태 메시지
+  - 통계 화면 구현 완료: 누적 요약 카드, 전체 기간 가로 스크롤 차트, 선택 월 상세 카드, 빈 상태 메시지
   - 신규 저장 기록 반영 시 통계 자동 갱신 흐름 연결 완료: `HomeSummary` + 월별 Flow 결합
   - Phase 6 단위 테스트 추가: DAO 월별 집계, repository 버킷 보정, stats ViewModel 상태, 포맷터 검증
   - 차트 라이브러리 적용 완료: 현재 프로젝트의 AGP/Compose 제약에 맞춰 Vico Compose `1.13.1` 사용

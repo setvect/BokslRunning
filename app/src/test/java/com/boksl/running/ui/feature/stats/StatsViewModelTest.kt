@@ -50,6 +50,8 @@ class StatsViewModelTest {
             assertEquals(3_600_000L, uiState.totalDurationMillis)
             assertEquals(StatsChartMetric.DISTANCE, uiState.selectedMetric)
             assertEquals(2, uiState.monthlyStats.size)
+            assertEquals(1, uiState.selectedMonthIndex)
+            assertEquals(YearMonth.of(2025, 11), uiState.selectedMonth?.yearMonth)
             assertTrue(uiState.hasRecordedSessions)
         }
 
@@ -69,30 +71,69 @@ class StatsViewModelTest {
             advanceUntilIdle()
 
             val initialMonthlyStats = viewModel.uiState.value.monthlyStats
+            val initialSelectedMonthIndex = viewModel.uiState.value.selectedMonthIndex
             viewModel.onMetricSelected(StatsChartMetric.AVERAGE_SPEED)
             advanceUntilIdle()
 
             val uiState = viewModel.uiState.value
             assertEquals(StatsChartMetric.AVERAGE_SPEED, uiState.selectedMetric)
             assertEquals(initialMonthlyStats, uiState.monthlyStats)
+            assertEquals(initialSelectedMonthIndex, uiState.selectedMonthIndex)
         }
 
     @Test
-    fun uiStateMarksEmptyStateWhenNoRecordedDistanceOrDuration() =
+    fun onMonthSelectedUpdatesSelectedMonthIndexAndMonth() =
+        runTest {
+            val repository =
+                FakeStatsRunningRepository(
+                    summary = HomeSummary(2_000.0, 600_000L, 3.3333333333, 0.0),
+                    monthlyStats =
+                        listOf(
+                            MonthlyStatsPoint(YearMonth.of(2025, 12), 500.0, 200_000L, 2.5),
+                            MonthlyStatsPoint(YearMonth.of(2026, 1), 600.0, 180_000L, 3.3333333333),
+                            MonthlyStatsPoint(YearMonth.of(2026, 2), 900.0, 220_000L, 4.0909090909),
+                        ),
+                )
+            val viewModel = StatsViewModel(runningRepository = repository)
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+
+            viewModel.onMonthSelected(0)
+            advanceUntilIdle()
+
+            val uiState = viewModel.uiState.value
+            assertEquals(0, uiState.selectedMonthIndex)
+            assertEquals(YearMonth.of(2025, 12), uiState.selectedMonth?.yearMonth)
+        }
+
+    @Test
+    fun uiStateKeepsSixMonthWindowWhenNoRecordedDistanceOrDuration() =
         runTest {
             val viewModel =
                 StatsViewModel(
                     runningRepository =
                         FakeStatsRunningRepository(
                             summary = HomeSummary(0.0, 0L, 0.0, 0.0),
-                            monthlyStats = emptyList(),
+                            monthlyStats =
+                                listOf(
+                                    MonthlyStatsPoint(YearMonth.of(2025, 10), 0.0, 0L, 0.0),
+                                    MonthlyStatsPoint(YearMonth.of(2025, 11), 0.0, 0L, 0.0),
+                                    MonthlyStatsPoint(YearMonth.of(2025, 12), 0.0, 0L, 0.0),
+                                    MonthlyStatsPoint(YearMonth.of(2026, 1), 0.0, 0L, 0.0),
+                                    MonthlyStatsPoint(YearMonth.of(2026, 2), 0.0, 0L, 0.0),
+                                    MonthlyStatsPoint(YearMonth.of(2026, 3), 0.0, 0L, 0.0),
+                                ),
                         ),
                 )
             backgroundScope.launch { viewModel.uiState.collect {} }
 
             advanceUntilIdle()
 
-            assertFalse(viewModel.uiState.value.hasRecordedSessions)
+            val uiState = viewModel.uiState.value
+            assertFalse(uiState.hasRecordedSessions)
+            assertEquals(6, uiState.monthlyStats.size)
+            assertEquals(5, uiState.selectedMonthIndex)
+            assertEquals(YearMonth.of(2026, 3), uiState.selectedMonth?.yearMonth)
         }
 }
 
@@ -105,7 +146,7 @@ private class FakeStatsRunningRepository(
 
     override fun observeHomeSummary(): Flow<HomeSummary> = summaryState
 
-    override fun observeMonthlyStats(monthCount: Int): Flow<List<MonthlyStatsPoint>> = monthlyStatsState
+    override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = monthlyStatsState
 
     override fun observeSession(sessionId: Long): Flow<RunningSession?> = flowOf(null)
 

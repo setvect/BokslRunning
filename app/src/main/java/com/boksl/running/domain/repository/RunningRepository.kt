@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 interface RunningRepository {
     fun observeHomeSummary(): Flow<HomeSummary>
 
-    fun observeMonthlyStats(monthCount: Int = 6): Flow<List<MonthlyStatsPoint>>
+    fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>>
 
     fun observeSession(sessionId: Long): Flow<RunningSession?>
 
