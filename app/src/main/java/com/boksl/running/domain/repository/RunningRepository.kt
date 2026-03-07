@@ -1,5 +1,6 @@
 package com.boksl.running.domain.repository
 
+import androidx.paging.PagingData
 import com.boksl.running.domain.model.HomeSummary
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.TrackPoint
@@ -9,6 +10,8 @@ interface RunningRepository {
     fun observeHomeSummary(): Flow<HomeSummary>
 
     fun observeSession(sessionId: Long): Flow<RunningSession?>
+
+    fun observeSavedSessionsPaged(): Flow<PagingData<RunningSession>>
 
     fun observeRecentSessions(limit: Int = 50): Flow<List<RunningSession>>
 

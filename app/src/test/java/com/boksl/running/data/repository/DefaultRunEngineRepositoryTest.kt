@@ -1,5 +1,6 @@
 package com.boksl.running.data.repository
 
+import androidx.paging.PagingData
 import com.boksl.running.data.location.LocationClient
 import com.boksl.running.data.location.LocationRequestConfig
 import com.boksl.running.domain.model.AppPreferences
@@ -158,6 +159,15 @@ private class FakeRunningRepository(
     override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
 
     override fun observeSession(sessionId: Long): Flow<RunningSession?> = flowOf(sessions[sessionId])
+
+    override fun observeSavedSessionsPaged(): Flow<PagingData<RunningSession>> =
+        flowOf(
+            PagingData.from(
+                sessions.values
+                    .filter { it.status == SessionStatus.SAVED }
+                    .sortedByDescending { it.startedAtEpochMillis },
+            ),
+        )
 
     override fun observeRecentSessions(limit: Int): Flow<List<RunningSession>> = flowOf(sessions.values.toList())
 

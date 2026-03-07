@@ -25,5 +25,11 @@ sealed class AppRoute(val route: String) {
 
     data object History : AppRoute("history")
 
+    data object HistoryDetail : AppRoute("history_detail/{sessionId}") {
+        const val sessionIdArg = "sessionId"
+
+        fun createRoute(sessionId: Long): String = "history_detail/$sessionId"
+    }
+
     data object Stats : AppRoute("stats")
 }

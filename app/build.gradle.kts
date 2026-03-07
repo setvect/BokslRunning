@@ -80,7 +80,10 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
     implementation(libs.play.services.location)
     implementation(libs.google.maps.compose)
 
@@ -89,6 +92,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.paging.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.junit)

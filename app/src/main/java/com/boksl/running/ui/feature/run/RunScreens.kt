@@ -23,6 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.boksl.running.domain.model.RunSnapshot
 import com.boksl.running.domain.model.RunningSession
+import com.boksl.running.ui.formatCaloriesText
+import com.boksl.running.ui.formatDistanceKm
+import com.boksl.running.ui.formatDurationText
+import com.boksl.running.ui.formatPaceText
+import com.boksl.running.ui.formatSpeedKmh
 import com.google.android.gms.maps.model.LatLng
 import java.util.Locale
 
@@ -200,12 +205,12 @@ private fun metricsGrid(
             ) {
                 metricTile(
                     label = "시간",
-                    value = snapshot?.durationMillis?.toDurationText() ?: "--:--",
+                    value = snapshot?.durationMillis?.formatDurationText() ?: "--:--",
                     modifier = Modifier.weight(1f),
                 )
                 metricTile(
                     label = "거리",
-                    value = "${snapshot?.totalDistanceMeters?.toKilometersText() ?: "0.00"} km",
+                    value = "${snapshot?.totalDistanceMeters?.formatDistanceKm() ?: "0.00"} km",
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -215,12 +220,12 @@ private fun metricsGrid(
             ) {
                 metricTile(
                     label = "현재 페이스",
-                    value = snapshot?.currentPaceSecPerKm.toPaceText(),
+                    value = snapshot?.currentPaceSecPerKm.formatPaceText(),
                     modifier = Modifier.weight(1f),
                 )
                 metricTile(
                     label = "평균 페이스",
-                    value = snapshot?.averagePaceSecPerKm.toPaceText(),
+                    value = snapshot?.averagePaceSecPerKm.formatPaceText(),
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -230,12 +235,12 @@ private fun metricsGrid(
             ) {
                 metricTile(
                     label = "최고 속도",
-                    value = "${snapshot?.maxSpeedMps?.toSpeedText() ?: "0.00"} km/h",
+                    value = "${snapshot?.maxSpeedMps?.formatSpeedKmh() ?: "0.00"} km/h",
                     modifier = Modifier.weight(1f),
                 )
                 metricTile(
                     label = "칼로리",
-                    value = (snapshot?.calorieKcal ?: savedSession?.stats?.calorieKcal).toCaloriesText(),
+                    value = (snapshot?.calorieKcal ?: savedSession?.stats?.calorieKcal).formatCaloriesText(),
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -257,23 +262,23 @@ private fun summaryCard(
             Text(text = "저장된 결과", style = MaterialTheme.typography.titleMedium)
             summaryRow(
                 label = "총 거리",
-                value = "${(stats?.distanceMeters ?: snapshot?.totalDistanceMeters ?: 0.0).toKilometersText()} km",
+                value = "${(stats?.distanceMeters ?: snapshot?.totalDistanceMeters ?: 0.0).formatDistanceKm()} km",
             )
             summaryRow(
                 label = "총 시간",
-                value = (stats?.durationMillis ?: snapshot?.durationMillis ?: 0L).toDurationText(),
+                value = (stats?.durationMillis ?: snapshot?.durationMillis ?: 0L).formatDurationText(),
             )
             summaryRow(
                 label = "평균 페이스",
-                value = (stats?.averagePaceSecPerKm ?: snapshot?.averagePaceSecPerKm).toPaceText(),
+                value = (stats?.averagePaceSecPerKm ?: snapshot?.averagePaceSecPerKm).formatPaceText(),
             )
             summaryRow(
                 label = "최고 속도",
-                value = "${(stats?.maxSpeedMps ?: snapshot?.maxSpeedMps ?: 0.0).toSpeedText()} km/h",
+                value = "${(stats?.maxSpeedMps ?: snapshot?.maxSpeedMps ?: 0.0).formatSpeedKmh()} km/h",
             )
             summaryRow(
                 label = "칼로리",
-                value = (stats?.calorieKcal ?: snapshot?.calorieKcal).toCaloriesText(),
+                value = (stats?.calorieKcal ?: snapshot?.calorieKcal).formatCaloriesText(),
             )
         }
     }
@@ -322,30 +327,3 @@ private fun summaryRow(
         Text(text = value, style = MaterialTheme.typography.titleSmall)
     }
 }
-
-private fun Long.toDurationText(): String {
-    val totalSeconds = this / 1_000L
-    val hours = totalSeconds / 3_600L
-    val minutes = (totalSeconds % 3_600L) / 60L
-    val seconds = totalSeconds % 60L
-    return if (hours > 0L) {
-        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format(Locale.US, "%02d:%02d", minutes, seconds)
-    }
-}
-
-private fun Double.toKilometersText(): String = String.format(Locale.US, "%.2f", this / 1_000.0)
-
-private fun Double?.toPaceText(): String {
-    val pace = this ?: return "계산 불가"
-    val totalSeconds = pace.toInt()
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return String.format(Locale.US, "%d:%02d /km", minutes, seconds)
-}
-
-private fun Double.toSpeedText(): String = String.format(Locale.US, "%.2f", this * 3.6)
-
-private fun Double?.toCaloriesText(): String =
-    this?.let { String.format(Locale.US, "%.0f kcal", it) } ?: "프로필 입력 시 계산 가능"

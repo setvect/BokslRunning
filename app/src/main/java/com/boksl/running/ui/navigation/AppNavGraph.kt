@@ -13,11 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.boksl.running.ui.feature.history.HistoryDetailViewModel
+import com.boksl.running.ui.feature.history.HistoryListViewModel
+import com.boksl.running.ui.feature.history.HistoryScreenActions
+import com.boksl.running.ui.feature.history.historyDetailScreen
 import com.boksl.running.ui.feature.history.historyScreen
 import com.boksl.running.ui.feature.home.HomeViewModel
 import com.boksl.running.ui.feature.home.homeScreen
@@ -245,7 +250,49 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             )
         }
         composable(route = AppRoute.History.route) {
-            historyScreen(onNavigateUp = { navController.navigateUp() })
+            val context = LocalContext.current
+            val activity = context.findActivity()
+            val viewModel: HistoryListViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+            val pagedItems = viewModel.pagedItems.collectAsLazyPagingItems()
+
+            historyScreen(
+                uiState = uiState,
+                pagedItems = pagedItems,
+                actions =
+                    HistoryScreenActions(
+                        onNavigateUp = { navController.navigateUp() },
+                        onOpenSession = { sessionId ->
+                            navController.navigate(AppRoute.HistoryDetail.createRoute(sessionId))
+                        },
+                        onStartRun = {
+                            if (hasLocationPermission(context)) {
+                                navController.navigate(AppRoute.RunReady.route)
+                            } else {
+                                viewModel.onRunStartRequested(
+                                    shouldShowRationale = activity?.let(::shouldShowLocationPermissionRationale) ?: false,
+                                )
+                            }
+                        },
+                        onDismissPermissionDialog = viewModel::dismissPermissionDialog,
+                        onOpenAppSettings = {
+                            openAppSettings(context)
+                            viewModel.dismissPermissionDialog()
+                        },
+                    ),
+            )
+        }
+        composable(
+            route = AppRoute.HistoryDetail.route,
+            arguments = listOf(navArgument(AppRoute.HistoryDetail.sessionIdArg) { type = NavType.LongType }),
+        ) {
+            val viewModel: HistoryDetailViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            historyDetailScreen(
+                uiState = uiState,
+                onNavigateUp = { navController.navigateUp() },
+            )
         }
         composable(route = AppRoute.Stats.route) {
             statsScreen(onNavigateUp = { navController.navigateUp() })

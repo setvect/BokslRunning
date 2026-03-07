@@ -1,6 +1,7 @@
 package com.boksl.running.data.local.db.dao
 
 import android.content.Context
+import androidx.paging.PagingSource
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.boksl.running.data.local.db.AppDatabase
@@ -131,6 +132,50 @@ class RunningSessionDaoTest {
 
             val recent = runningSessionDao.observeRecent(limit = 2).first()
             assertEquals(listOf("session-b", "session-c"), recent.map { it.externalId })
+        }
+
+    @Test
+    fun pagingSourceByStatusReturnsSavedOnlyInStartedAtDescendingOrder() =
+        runTest {
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-old",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 1_000L,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "in-progress",
+                    status = SessionStatus.IN_PROGRESS,
+                    startedAtEpochMillis = 9_000L,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-new",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 5_000L,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "discarded",
+                    status = SessionStatus.DISCARDED,
+                    startedAtEpochMillis = 7_000L,
+                ),
+            )
+
+            val saved =
+                runningSessionDao.pagingSourceByStatus(SessionStatus.SAVED).load(
+                    PagingSource.LoadParams.Refresh(
+                        key = null,
+                        loadSize = 10,
+                        placeholdersEnabled = false,
+                    ),
+                ) as PagingSource.LoadResult.Page
+
+            assertEquals(listOf("saved-new", "saved-old"), saved.data.map { it.externalId })
         }
 
     @Test

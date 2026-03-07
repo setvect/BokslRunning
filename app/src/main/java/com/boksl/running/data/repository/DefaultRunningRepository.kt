@@ -1,5 +1,9 @@
 package com.boksl.running.data.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.boksl.running.core.di.IoDispatcher
 import com.boksl.running.data.local.db.dao.HomeSummaryProjection
 import com.boksl.running.data.local.db.dao.RunningSessionDao
@@ -41,6 +45,19 @@ class DefaultRunningRepository
                 .observeById(sessionId)
                 .map { entity -> entity?.toDomain() }
                 .flowOn(ioDispatcher)
+
+        override fun observeSavedSessionsPaged(): Flow<PagingData<RunningSession>> =
+            Pager(
+                config =
+                    PagingConfig(
+                        pageSize = historyPageSize,
+                        initialLoadSize = initialHistoryLoadSize,
+                        enablePlaceholders = false,
+                    ),
+                pagingSourceFactory = { runningSessionDao.pagingSourceByStatus(SessionStatus.SAVED) },
+            ).flow.map { pagingData ->
+                pagingData.map { entity -> entity.toDomain() }
+            }
 
         override fun observeRecentSessions(limit: Int): Flow<List<RunningSession>> =
             runningSessionDao
@@ -139,6 +156,8 @@ class DefaultRunningRepository
             const val MAX_LATITUDE = 90.0
             const val MIN_LONGITUDE = -180.0
             const val MAX_LONGITUDE = 180.0
+            const val historyPageSize = 20
+            const val initialHistoryLoadSize = 40
         }
     }
 

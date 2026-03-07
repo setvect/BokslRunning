@@ -3,6 +3,7 @@ package com.boksl.running.data.repository
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import androidx.paging.testing.asSnapshot
 import com.boksl.running.data.local.db.AppDatabase
 import com.boksl.running.domain.model.RunStats
 import com.boksl.running.domain.model.RunningSession
@@ -242,5 +243,47 @@ class RunningRepositoryTest {
             assertEquals(900_000L, summary.totalDurationMillis)
             assertEquals(3.3333333333333335, summary.averageSpeedMps, 0.000001)
             assertEquals(120.0, summary.totalCaloriesKcal, 0.0)
+        }
+
+    @Test
+    fun observeSavedSessionsPagedReturnsSavedOnlyInStartedAtDescendingOrder() =
+        runTest {
+            repository.insertSession(
+                RunningSession(
+                    externalId = "saved-old",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 1_000L,
+                    endedAtEpochMillis = 301_000L,
+                    stats = RunStats(300_000L, 1_000.0, 300.0, 4.0, 90.0),
+                    createdAtEpochMillis = 1_000L,
+                    updatedAtEpochMillis = 301_000L,
+                ),
+            )
+            repository.insertSession(
+                RunningSession(
+                    externalId = "in-progress",
+                    status = SessionStatus.IN_PROGRESS,
+                    startedAtEpochMillis = 8_000L,
+                    endedAtEpochMillis = null,
+                    stats = RunStats(0L, 0.0, null, 0.0, null),
+                    createdAtEpochMillis = 8_000L,
+                    updatedAtEpochMillis = 8_000L,
+                ),
+            )
+            repository.insertSession(
+                RunningSession(
+                    externalId = "saved-new",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 5_000L,
+                    endedAtEpochMillis = 205_000L,
+                    stats = RunStats(200_000L, 800.0, 250.0, 4.5, 70.0),
+                    createdAtEpochMillis = 5_000L,
+                    updatedAtEpochMillis = 205_000L,
+                ),
+            )
+
+            val savedSessions = repository.observeSavedSessionsPaged().asSnapshot()
+
+            assertEquals(listOf("saved-new", "saved-old"), savedSessions.map { it.externalId })
         }
 }

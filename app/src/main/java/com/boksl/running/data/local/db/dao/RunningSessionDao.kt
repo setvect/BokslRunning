@@ -3,6 +3,7 @@ package com.boksl.running.data.local.db.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
+import androidx.paging.PagingSource
 import androidx.room.Query
 import androidx.room.Update
 import com.boksl.running.data.local.db.entity.RunningSessionEntity
@@ -34,6 +35,15 @@ interface RunningSessionDao {
 
     @Query("SELECT * FROM running_sessions WHERE id = :sessionId LIMIT 1")
     fun observeById(sessionId: Long): Flow<RunningSessionEntity?>
+
+    @Query(
+        """
+        SELECT * FROM running_sessions
+        WHERE status = :status
+        ORDER BY started_at_epoch_millis DESC
+        """,
+    )
+    fun pagingSourceByStatus(status: SessionStatus): PagingSource<Int, RunningSessionEntity>
 
     @Query("SELECT * FROM running_sessions ORDER BY started_at_epoch_millis DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<RunningSessionEntity>>

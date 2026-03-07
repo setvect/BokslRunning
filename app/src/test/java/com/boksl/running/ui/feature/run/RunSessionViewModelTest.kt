@@ -1,5 +1,6 @@
 package com.boksl.running.ui.feature.run
 
+import androidx.paging.PagingData
 import com.boksl.running.MainDispatcherRule
 import com.boksl.running.core.network.NetworkMonitor
 import com.boksl.running.domain.model.HomeSummary
@@ -183,6 +184,9 @@ private class FakeRunningRepository(
     override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
 
     override fun observeSession(sessionId: Long): Flow<RunningSession?> = sessionState
+
+    override fun observeSavedSessionsPaged(): Flow<PagingData<RunningSession>> =
+        flowOf(PagingData.from(listOfNotNull(sessionState.value).filter { it.status == SessionStatus.SAVED }))
 
     override fun observeRecentSessions(limit: Int): Flow<List<RunningSession>> =
         flowOf(listOfNotNull(sessionState.value))

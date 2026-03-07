@@ -5,13 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.boksl.running.domain.repository.ProfileRepository
 import com.boksl.running.domain.repository.RunningRepository
 import com.boksl.running.ui.feature.permission.LocationPermissionUiState
-import com.boksl.running.ui.feature.permission.resolveLocationPermissionUiState
+import com.boksl.running.ui.feature.permission.resolveRunStartPermissionDialogState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -47,16 +46,11 @@ class HomeViewModel
 
         fun onRunStartRequested(shouldShowRationale: Boolean) {
             viewModelScope.launch {
-                val preferences = profileRepository.observeAppPreferences().first()
                 permissionDialogState.value =
-                    resolveLocationPermissionUiState(
-                        hasPermission = false,
+                    resolveRunStartPermissionDialogState(
+                        profileRepository = profileRepository,
                         shouldShowRationale = shouldShowRationale,
-                        rationaleAlreadyShown = preferences.locationRationaleShown,
                     )
-                if (!preferences.locationRationaleShown) {
-                    profileRepository.setLocationRationaleShown(shown = true)
-                }
             }
         }
 
