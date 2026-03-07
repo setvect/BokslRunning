@@ -40,7 +40,7 @@
   - Hilt/Navigation/Room/DataStore/Coroutines 의존성 및 플러그인 구성 완료
   - `ui/domain/data/core` 패키지 골격 + `home/settings/history/stats` 라우트 placeholder 연결 완료
 
-- [ ] **Phase 1. 도메인/저장소 기반 확정**
+- [x] **Phase 1. 도메인/저장소 기반 확정**
 
 - 목표: 러닝 기록의 데이터 계약을 먼저 고정한다.
 - 주요 작업:
@@ -52,6 +52,13 @@
   - 테이블 명세서 문서(확정본)
   - 세션/트랙 포인트 CRUD 동작
   - 프로필 저장/조회 동작
+- 완료 내역 (2026-03-01):
+  - 도메인 계약 고정: `Profile`, `RunningSession`, `TrackPoint`, `RunStats`, `AppPreferences`, `Gender`, `SessionStatus`
+  - Room v1 구현 완료: `running_sessions`, `track_points` Entity/DAO/Database 및 status converter 추가
+  - Repository 구현 완료: `RunningRepository`, `ProfileRepository` 인터페이스 및 기본 구현체 연결
+  - DataStore 구현 완료: 프로필 키 4종 + 플래그 키 2종 저장/조회 경로 확정
+  - 테이블 명세서 문서 추가: `docs/database-schema.md`
+  - Phase 1 회귀 테스트 추가: DAO/Repository/DataStore 단위 테스트
 
 - [ ] **Phase 2. 온보딩/권한/기본 네비게이션 구현**
 

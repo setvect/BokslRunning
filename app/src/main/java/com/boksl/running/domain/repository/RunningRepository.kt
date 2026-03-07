@@ -1,0 +1,25 @@
+package com.boksl.running.domain.repository
+
+import com.boksl.running.domain.model.RunningSession
+import com.boksl.running.domain.model.TrackPoint
+import kotlinx.coroutines.flow.Flow
+
+interface RunningRepository {
+    fun observeSession(sessionId: Long): Flow<RunningSession?>
+
+    fun observeRecentSessions(limit: Int = 50): Flow<List<RunningSession>>
+
+    fun observeTrackPoints(sessionId: Long): Flow<List<TrackPoint>>
+
+    suspend fun getSession(sessionId: Long): RunningSession?
+
+    suspend fun getActiveSession(): RunningSession?
+
+    suspend fun insertSession(session: RunningSession): Long
+
+    suspend fun updateSession(session: RunningSession)
+
+    suspend fun insertTrackPoints(points: List<TrackPoint>)
+
+    suspend fun deleteSession(sessionId: Long)
+}
