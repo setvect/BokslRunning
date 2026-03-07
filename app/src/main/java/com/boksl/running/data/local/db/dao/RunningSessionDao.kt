@@ -65,6 +65,9 @@ interface RunningSessionDao {
     @Query("SELECT * FROM running_sessions WHERE status = :status ORDER BY started_at_epoch_millis DESC LIMIT 1")
     suspend fun getLatestByStatus(status: SessionStatus): RunningSessionEntity?
 
+    @Query("SELECT * FROM running_sessions WHERE external_id = :externalId LIMIT 1")
+    suspend fun getByExternalId(externalId: String): RunningSessionEntity?
+
     @Query(
         """
         SELECT * FROM running_sessions

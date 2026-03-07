@@ -46,6 +46,10 @@ import com.boksl.running.ui.feature.settings.ExportEvent
 import com.boksl.running.ui.feature.settings.ExportViewModel
 import com.boksl.running.ui.feature.settings.buildExportShareIntent
 import com.boksl.running.ui.feature.settings.exportScreen
+import com.boksl.running.ui.feature.settings.saveExportFileToUri
+import com.boksl.running.ui.feature.settings.ImportEvent
+import com.boksl.running.ui.feature.settings.ImportViewModel
+import com.boksl.running.ui.feature.settings.importScreen
 import com.boksl.running.ui.feature.settings.SettingsViewModel
 import com.boksl.running.ui.feature.settings.settingsScreen
 import com.boksl.running.ui.feature.stats.statsScreen
@@ -335,6 +339,7 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                     )
                 },
                 onOpenExport = { navController.navigate(AppRoute.Export.route) },
+                onOpenImport = { navController.navigate(AppRoute.Import.route) },
                 onNavigateHome = {
                     navController.navigate(AppRoute.Home.route) {
                         popUpTo(AppRoute.Home.route) { inclusive = false }
@@ -352,6 +357,26 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             val context = LocalContext.current
             val viewModel: ExportViewModel = hiltViewModel()
             val uiState by viewModel.uiState.collectAsState()
+            val pendingSaveFilePath =
+                androidx.compose.runtime.remember {
+                    androidx.compose.runtime.mutableStateOf<String?>(null)
+                }
+            val saveDocumentLauncher =
+                rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+                    val filePath = pendingSaveFilePath.value
+                    if (uri != null && filePath != null) {
+                        runCatching {
+                            saveExportFileToUri(
+                                context = context,
+                                sourceFilePath = filePath,
+                                targetUri = uri,
+                            )
+                        }.onFailure { throwable ->
+                            viewModel.showShareError(throwable.message ?: "디바이스 저장에 실패했습니다.")
+                        }
+                    }
+                    pendingSaveFilePath.value = null
+                }
 
             LaunchedEffect(Unit) {
                 viewModel.event.collect { event ->
@@ -362,6 +387,10 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                             }.onFailure { throwable ->
                                 viewModel.showShareError(throwable.message ?: "파일 공유를 시작하지 못했습니다.")
                             }
+                        is ExportEvent.SaveFileToDevice -> {
+                            pendingSaveFilePath.value = event.filePath
+                            saveDocumentLauncher.launch(event.fileName)
+                        }
                     }
                 }
             }
@@ -372,6 +401,37 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                 onStartExport = viewModel::startExport,
                 onCancelExport = viewModel::cancelExport,
                 onShareExport = viewModel::shareExportFile,
+                onSaveToDevice = viewModel::saveExportFileToDevice,
+                onNavigateHome = {
+                    navController.navigate(AppRoute.Home.route) {
+                        popUpTo(AppRoute.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+        composable(route = AppRoute.Import.route) {
+            val viewModel: ImportViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+            val documentLauncher =
+                rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                    viewModel.onImportFileSelected(uri)
+                }
+
+            LaunchedEffect(Unit) {
+                viewModel.event.collect { event ->
+                    when (event) {
+                        ImportEvent.OpenDocumentPicker -> documentLauncher.launch(arrayOf("application/json"))
+                    }
+                }
+            }
+
+            importScreen(
+                uiState = uiState,
+                onNavigateUp = { navController.navigateUp() },
+                onStartImport = viewModel::startImport,
+                onCancelImport = viewModel::cancelImport,
+                onConfirm = { navController.navigateUp() },
                 onNavigateHome = {
                     navController.navigate(AppRoute.Home.route) {
                         popUpTo(AppRoute.Home.route) { inclusive = false }

@@ -67,6 +67,16 @@ class ExportViewModel
             eventChannel.trySend(ExportEvent.ShareFile(completed.filePath))
         }
 
+        fun saveExportFileToDevice() {
+            val completed = mutableUiState.value.progress as? ExportProgress.Completed ?: return
+            eventChannel.trySend(
+                ExportEvent.SaveFileToDevice(
+                    filePath = completed.filePath,
+                    fileName = DEVICE_EXPORT_FILE_NAME,
+                ),
+            )
+        }
+
         fun showShareError(message: String) {
             mutableUiState.update { uiState ->
                 uiState.copy(progress = ExportProgress.Error(message = message))
@@ -75,6 +85,7 @@ class ExportViewModel
 
         private companion object {
             const val EXPORT_FAILURE_MESSAGE = "내보내기에 실패했습니다."
+            const val DEVICE_EXPORT_FILE_NAME = "bokslrunning_export_v1.json"
         }
     }
 
@@ -85,5 +96,10 @@ data class ExportUiState(
 sealed interface ExportEvent {
     data class ShareFile(
         val filePath: String,
+    ) : ExportEvent
+
+    data class SaveFileToDevice(
+        val filePath: String,
+        val fileName: String,
     ) : ExportEvent
 }

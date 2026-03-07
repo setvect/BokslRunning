@@ -2,8 +2,7 @@ package com.boksl.running.data.repository
 
 import android.content.Context
 import com.boksl.running.core.di.IoDispatcher
-import com.boksl.running.data.export.ExportBundleDto
-import com.boksl.running.data.export.toExportDto
+import com.boksl.running.data.export.buildExportBundle
 import com.boksl.running.data.local.db.dao.RunningSessionDao
 import com.boksl.running.data.local.db.dao.TrackPointDao
 import com.boksl.running.data.local.preferences.ProfilePreferencesDataSource
@@ -16,7 +15,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.encodeToString
@@ -51,33 +49,24 @@ class DefaultExportRepository
                 temporaryFile.delete()
 
                 try {
-                    val profile = profilePreferencesDataSource.observeProfile().first()?.toExportDto()
-                    val appPreferences = profilePreferencesDataSource.observeAppPreferences().first().toExportDto()
                     val sessionEntities = runningSessionDao.getByStatus(SessionStatus.SAVED)
                     val totalSessions = sessionEntities.size
-                    val sessionDtos = mutableListOf<com.boksl.running.data.export.ExportSessionDto>()
 
                     emit(ExportProgress.Running(totalSessions = totalSessions, completedSessions = 0))
 
                     sessionEntities.forEachIndexed { index, session ->
                         currentCoroutineContext().ensureActive()
-                        val trackPoints =
-                            trackPointDao
-                                .getBySessionId(session.id)
-                                .map { trackPoint -> trackPoint.toExportDto() }
-                        sessionDtos += session.toExportDto(trackPoints)
                         emit(ExportProgress.Running(totalSessions = totalSessions, completedSessions = index + 1))
                     }
 
                     currentCoroutineContext().ensureActive()
 
                     val exportBundle =
-                        ExportBundleDto(
-                            schemaVersion = SCHEMA_VERSION,
-                            exportedAtEpochMillis = clock.millis(),
-                            profile = profile,
-                            appPreferences = appPreferences,
-                            sessions = sessionDtos,
+                        buildExportBundle(
+                            runningSessionDao = runningSessionDao,
+                            trackPointDao = trackPointDao,
+                            profilePreferencesDataSource = profilePreferencesDataSource,
+                            clock = clock,
                         )
 
                     temporaryFile.writeText(
@@ -108,7 +97,6 @@ class DefaultExportRepository
             const val EXPORT_DIRECTORY_NAME = "exports"
             const val EXPORT_FILE_NAME = "bokslrunning_export_v1.json"
             const val TEMP_FILE_NAME = "$EXPORT_FILE_NAME.tmp"
-            const val SCHEMA_VERSION = 1
             const val EXPORT_FAILURE_MESSAGE = "내보내기에 실패했습니다."
         }
     }

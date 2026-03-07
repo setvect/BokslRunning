@@ -25,6 +25,7 @@ fun settingsScreen(
     onNavigateUp: () -> Unit,
     onEditProfile: () -> Unit,
     onOpenExport: () -> Unit,
+    onOpenImport: () -> Unit,
     onNavigateHome: () -> Unit,
     onGenerateSeedDataClick: () -> Unit,
     onDeleteSeedDataClick: () -> Unit,
@@ -63,11 +64,11 @@ fun settingsScreen(
                 Text(text = "전체 내보내기")
             }
             Button(
-                onClick = {},
-                enabled = false,
+                onClick = onOpenImport,
+                enabled = !uiState.isBusy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(text = "가져오기 (준비 중)")
+                Text(text = "가져오기")
             }
             Button(onClick = onNavigateHome, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "홈")

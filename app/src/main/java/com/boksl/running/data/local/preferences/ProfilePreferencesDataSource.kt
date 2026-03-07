@@ -8,9 +8,11 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.boksl.running.domain.model.AppPreferences
 import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.Profile
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -29,6 +31,7 @@ class ProfilePreferencesDataSource
             val profileUpdatedAtEpochMillis = longPreferencesKey("profile_updated_at_epoch_millis")
             val onboardingCompleted = booleanPreferencesKey("onboarding_completed")
             val locationRationaleShown = booleanPreferencesKey("location_rationale_shown")
+            val importedFileHashes = stringSetPreferencesKey("imported_file_hashes")
         }
 
         fun observeProfile(): Flow<Profile?> =
@@ -86,6 +89,23 @@ class ProfilePreferencesDataSource
         suspend fun setLocationRationaleShown(shown: Boolean) {
             dataStore.edit { preferences ->
                 preferences[Keys.locationRationaleShown] = shown
+            }
+        }
+
+        suspend fun getImportedFileHashes(): Set<String> =
+            dataStore.data.first()[Keys.importedFileHashes] ?: emptySet()
+
+        suspend fun addImportedFileHash(hash: String) {
+            dataStore.edit { preferences ->
+                val currentHashes = preferences[Keys.importedFileHashes] ?: emptySet()
+                preferences[Keys.importedFileHashes] = currentHashes + hash
+            }
+        }
+
+        suspend fun saveAppPreferences(appPreferences: AppPreferences) {
+            dataStore.edit { preferences ->
+                preferences[Keys.onboardingCompleted] = appPreferences.onboardingCompleted
+                preferences[Keys.locationRationaleShown] = appPreferences.locationRationaleShown
             }
         }
 

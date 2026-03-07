@@ -161,7 +161,7 @@
   - 설정/내보내기 화면 구현 완료: 설정 버튼 활성화, export route 추가, 준비/진행/완료/오류 상태 UI 및 취소/재시도 동작 연결
   - Phase 7 단위 테스트 추가: export repository JSON 스키마/필터링/빈 데이터/취소 정리, export ViewModel 상태 전이/이벤트 검증
 
-- [ ] **Phase 8. 가져오기 구현**
+- [x] **Phase 8. 가져오기 구현**
 
 - 목표: 기존 데이터 보존 정책을 지키면서 병합 가져오기를 완성한다.
 - 주요 작업:
@@ -172,6 +172,13 @@
 - 산출물:
   - 스토리보드 12 구간 동작
   - 결과 안내(추가 N건, 중복 M건) 표시
+- 완료 내역 (2026-03-08):
+  - 가져오기 전용 계약 추가 완료: `ImportRepository`, `ImportProgress`, `ImportResult` 및 `schema_version = 1` 검증 경로 확정
+  - 내부 백업 구현 완료: 가져오기 전 현재 데이터를 `filesDir/import-backups/` 아래 export 스키마 JSON으로 저장
+  - 병합 가져오기 구현 완료: `SAVED` 세션만 `external_id` 기준 신규 추가하고, 동일 파일은 SHA-256 해시 저장으로 재가져오기 차단
+  - 프로필/앱 설정 병합 정책 구현 완료: 현재 프로필이 없을 때만 import 파일의 프로필/설정을 적용
+  - 설정/가져오기 화면 구현 완료: document picker 연동, 준비/진행/완료/중복 파일/오류 상태 UI 및 취소 동작 연결
+  - Phase 8 단위 테스트 추가: import repository 백업/파싱/중복 파일/병합/프로필 정책 검증, import ViewModel 상태 전이 검증
 
 - [ ] **Phase 9. 예외/복구 플로우 마감**
 

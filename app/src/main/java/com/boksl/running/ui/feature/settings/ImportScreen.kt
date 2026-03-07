@@ -16,23 +16,22 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.boksl.running.domain.model.ExportProgress
+import com.boksl.running.domain.model.ImportProgress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun exportScreen(
-    uiState: ExportUiState,
+fun importScreen(
+    uiState: ImportUiState,
     onNavigateUp: () -> Unit,
-    onStartExport: () -> Unit,
-    onCancelExport: () -> Unit,
-    onShareExport: () -> Unit,
-    onSaveToDevice: () -> Unit,
+    onStartImport: () -> Unit,
+    onCancelImport: () -> Unit,
+    onConfirm: () -> Unit,
     onNavigateHome: () -> Unit,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "전체 내보내기") },
+                title = { Text(text = "가져오기") },
                 navigationIcon = {
                     TextButton(onClick = onNavigateUp) {
                         Text(text = "뒤로")
@@ -50,74 +49,75 @@ fun exportScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (val progress = uiState.progress) {
-                ExportProgress.Idle -> {
-                    exportInfoCard()
-                    Button(onClick = onStartExport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "내보내기 시작")
+                ImportProgress.Idle -> {
+                    importInfoCard()
+                    Button(onClick = onStartImport, modifier = Modifier.fillMaxWidth()) {
+                        Text(text = "가져오기 시작")
                     }
                 }
 
-                is ExportProgress.Running -> {
-                    exportInfoCard()
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = "${progress.totalSessions}개 중 ${progress.completedSessions}개 생성 중…",
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                text = "모든 러닝 기록, 프로필, 앱 설정을 JSON 파일로 만들고 있습니다.",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
-                    Button(onClick = onCancelExport, modifier = Modifier.fillMaxWidth()) {
+                ImportProgress.BackingUp -> {
+                    importInfoCard()
+                    progressCard(message = "1/2 내부 백업 중…")
+                    Button(onClick = onCancelImport, modifier = Modifier.fillMaxWidth()) {
                         Text(text = "취소")
                     }
                 }
 
-                is ExportProgress.Completed -> {
+                ImportProgress.Importing -> {
+                    importInfoCard()
+                    progressCard(message = "2/2 데이터 병합 중…")
+                    Button(onClick = onCancelImport, modifier = Modifier.fillMaxWidth()) {
+                        Text(text = "취소")
+                    }
+                }
+
+                is ImportProgress.Completed -> {
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Text(
-                                text = "내보내기 완료",
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                text = "JSON 파일이 준비되었습니다. 공유 시트에서 파일 앱, 드라이브 등으로 저장할 수 있습니다.",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
+                            if (progress.result.wasDuplicateFile) {
+                                Text(
+                                    text = "이미 가져온 파일입니다",
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                            } else {
+                                Text(
+                                    text = "가져오기 완료",
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    text = "추가 ${progress.result.addedSessionCount}건, 중복 ${progress.result.duplicateSessionCount}건",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                if (progress.result.appliedProfile) {
+                                    Text(
+                                        text = "프로필과 앱 설정도 함께 복원했습니다.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                }
+                            }
                         }
                     }
-                    Button(onClick = onShareExport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "파일 공유/저장")
-                    }
-                    Button(onClick = onSaveToDevice, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "디바이스에 저장")
+                    Button(onClick = onConfirm, modifier = Modifier.fillMaxWidth()) {
+                        Text(text = "확인")
                     }
                     Button(onClick = onNavigateHome, modifier = Modifier.fillMaxWidth()) {
                         Text(text = "홈")
                     }
-                    TextButton(onClick = onStartExport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "다시 내보내기")
-                    }
                 }
 
-                is ExportProgress.Error -> {
-                    exportInfoCard()
+                is ImportProgress.Error -> {
+                    importInfoCard()
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
-                                text = "내보내기 실패",
+                                text = "가져오기 실패",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.error,
                             )
@@ -127,7 +127,7 @@ fun exportScreen(
                             )
                         }
                     }
-                    Button(onClick = onStartExport, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = onStartImport, modifier = Modifier.fillMaxWidth()) {
                         Text(text = "다시 시도")
                     }
                     TextButton(onClick = onNavigateUp, modifier = Modifier.fillMaxWidth()) {
@@ -140,18 +140,37 @@ fun exportScreen(
 }
 
 @Composable
-private fun exportInfoCard() {
+private fun importInfoCard() {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "모든 러닝 기록을 파일로 생성합니다",
+                text = "가져오기 전에 현재 데이터를 내부 백업합니다",
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
-                text = "형식: bokslrunning_export_v1.json",
+                text = "정책: 기존 데이터 유지 + 가져온 데이터 병합",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun progressCard(message: String) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = "선택한 JSON 파일을 검증하고 현재 데이터와 병합하고 있습니다.",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }

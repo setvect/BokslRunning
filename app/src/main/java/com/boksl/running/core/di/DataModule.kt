@@ -11,10 +11,12 @@ import com.boksl.running.data.location.DefaultLocationClient
 import com.boksl.running.data.location.LocationClient
 import com.boksl.running.data.local.preferences.ProfilePreferencesDataSource
 import com.boksl.running.data.repository.DefaultExportRepository
+import com.boksl.running.data.repository.DefaultImportRepository
 import com.boksl.running.data.repository.DefaultProfileRepository
 import com.boksl.running.data.repository.DefaultRunEngineRepository
 import com.boksl.running.data.repository.DefaultRunningRepository
 import com.boksl.running.domain.repository.ExportRepository
+import com.boksl.running.domain.repository.ImportRepository
 import com.boksl.running.domain.repository.ProfileRepository
 import com.boksl.running.domain.repository.RunEngineRepository
 import com.boksl.running.domain.repository.RunningRepository
@@ -91,6 +93,11 @@ object DataModule {
     @Singleton
     fun provideExportRepository(defaultExportRepository: DefaultExportRepository): ExportRepository =
         defaultExportRepository
+
+    @Provides
+    @Singleton
+    fun provideImportRepository(defaultImportRepository: DefaultImportRepository): ImportRepository =
+        defaultImportRepository
 
     @Provides
     @Singleton

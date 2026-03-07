@@ -101,6 +101,31 @@ class ExportViewModelTest {
         }
 
     @Test
+    fun saveExportFileToDeviceEmitsOneShotEventAfterCompletion() =
+        runTest {
+            val viewModel =
+                ExportViewModel(
+                    exportRepository =
+                        FakeExportRepository(
+                            flowFactory = { flowOf(ExportProgress.Completed(filePath = "/tmp/export.json")) },
+                        ),
+                )
+
+            viewModel.startExport()
+            advanceUntilIdle()
+            viewModel.saveExportFileToDevice()
+            val emittedEvent = viewModel.event.first()
+
+            assertEquals(
+                ExportEvent.SaveFileToDevice(
+                    filePath = "/tmp/export.json",
+                    fileName = "bokslrunning_export_v1.json",
+                ),
+                emittedEvent,
+            )
+        }
+
+    @Test
     fun startExportShowsErrorWhenRepositoryThrows() =
         runTest {
             val gate = CompletableDeferred<Unit>()
