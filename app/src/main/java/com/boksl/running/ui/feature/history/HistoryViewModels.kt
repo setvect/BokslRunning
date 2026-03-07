@@ -11,15 +11,18 @@ import com.boksl.running.domain.model.TrackPoint
 import com.boksl.running.domain.repository.ProfileRepository
 import com.boksl.running.domain.repository.RunningRepository
 import com.boksl.running.ui.feature.permission.LocationPermissionUiState
+import com.boksl.running.ui.feature.permission.PermissionReturnAction
 import com.boksl.running.ui.feature.permission.resolveRunStartPermissionDialogState
 import com.boksl.running.ui.navigation.AppRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,6 +35,9 @@ class HistoryListViewModel
         private val profileRepository: ProfileRepository,
     ) : ViewModel() {
         private val permissionDialogState = MutableStateFlow<LocationPermissionUiState?>(null)
+        private val permissionReturnAction = MutableStateFlow(PermissionReturnAction.None)
+        private val eventChannel = Channel<HistoryListEvent>(capacity = Channel.BUFFERED)
+        val event = eventChannel.receiveAsFlow()
 
         val pagedItems: Flow<PagingData<HistoryListItemUiState>> =
             runningRepository
@@ -41,14 +47,16 @@ class HistoryListViewModel
                 }
 
         val uiState: StateFlow<HistoryListUiState> =
-            permissionDialogState
-                .map { dialogState ->
-                    HistoryListUiState(permissionDialogState = dialogState)
-                }.stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(STATE_TIMEOUT_MILLIS),
-                    initialValue = HistoryListUiState(),
+            combine(permissionDialogState, permissionReturnAction) { dialogState, pendingAction ->
+                HistoryListUiState(
+                    permissionDialogState = dialogState,
+                    permissionReturnAction = pendingAction,
                 )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STATE_TIMEOUT_MILLIS),
+                initialValue = HistoryListUiState(),
+            )
 
         fun onRunStartRequested(shouldShowRationale: Boolean) {
             viewModelScope.launch {
@@ -62,6 +70,19 @@ class HistoryListViewModel
 
         fun dismissPermissionDialog() {
             permissionDialogState.value = null
+        }
+
+        fun onOpenAppSettingsRequested() {
+            permissionDialogState.value = null
+            permissionReturnAction.value = PermissionReturnAction.StartRun
+        }
+
+        fun onPermissionSettingsResult(hasPermission: Boolean) {
+            if (permissionReturnAction.value != PermissionReturnAction.StartRun) return
+            permissionReturnAction.value = PermissionReturnAction.None
+            if (hasPermission) {
+                eventChannel.trySend(HistoryListEvent.NavigateToRunReady)
+            }
         }
     }
 
@@ -95,7 +116,12 @@ class HistoryDetailViewModel
 
 data class HistoryListUiState(
     val permissionDialogState: LocationPermissionUiState? = null,
+    val permissionReturnAction: PermissionReturnAction = PermissionReturnAction.None,
 )
+
+sealed interface HistoryListEvent {
+    data object NavigateToRunReady : HistoryListEvent
+}
 
 data class HistoryListItemUiState(
     val sessionId: Long,

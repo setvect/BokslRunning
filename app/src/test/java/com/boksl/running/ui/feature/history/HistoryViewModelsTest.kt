@@ -16,10 +16,13 @@ import com.boksl.running.domain.model.TrackPoint
 import com.boksl.running.domain.repository.ProfileRepository
 import com.boksl.running.domain.repository.RunningRepository
 import com.boksl.running.ui.feature.permission.LocationPermissionUiState
+import com.boksl.running.ui.feature.permission.PermissionReturnAction
 import com.boksl.running.ui.navigation.AppRoute
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -109,6 +112,28 @@ class HistoryViewModelsTest {
             viewModel.onRunStartRequested(shouldShowRationale = false)
             advanceUntilIdle()
             assertEquals(LocationPermissionUiState.PermanentlyDenied, viewModel.uiState.value.permissionDialogState)
+        }
+
+    @Test
+    fun historyListPermissionSettingsReturnNavigatesToRunReady() =
+        runTest {
+            val viewModel =
+                HistoryListViewModel(
+                    runningRepository = FakeRunningRepository(),
+                    profileRepository = FakeProfileRepository(),
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            val eventDeferred = async { viewModel.event.first() }
+
+            viewModel.onOpenAppSettingsRequested()
+            advanceUntilIdle()
+            assertEquals(PermissionReturnAction.StartRun, viewModel.uiState.value.permissionReturnAction)
+
+            viewModel.onPermissionSettingsResult(hasPermission = true)
+            advanceUntilIdle()
+
+            assertEquals(HistoryListEvent.NavigateToRunReady, eventDeferred.await())
+            assertEquals(PermissionReturnAction.None, viewModel.uiState.value.permissionReturnAction)
         }
 
     @Test

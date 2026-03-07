@@ -33,7 +33,7 @@ class AppLaunchViewModel
                 )
             }.stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000L),
+                started = SharingStarted.WhileSubscribed(STATE_TIMEOUT_MILLIS),
                 initialValue = AppLaunchUiState.Loading,
             )
     }
@@ -47,7 +47,7 @@ sealed interface AppLaunchUiState {
 
     data object NeedsLocationPermission : AppLaunchUiState
 
-    data object HasActiveRun : AppLaunchUiState
+    data object NeedsRunRecovery : AppLaunchUiState
 
     data object Ready : AppLaunchUiState
 }
@@ -58,8 +58,10 @@ internal fun resolveAppLaunchUiState(
     hasActiveRun: Boolean,
 ): AppLaunchUiState =
     when {
-        hasActiveRun -> AppLaunchUiState.HasActiveRun
+        hasActiveRun -> AppLaunchUiState.NeedsRunRecovery
         onboardingCompleted -> AppLaunchUiState.Ready
         profile == null -> AppLaunchUiState.NeedsOnboarding
         else -> AppLaunchUiState.NeedsLocationPermission
     }
+
+private const val STATE_TIMEOUT_MILLIS = 5_000L

@@ -17,6 +17,8 @@ sealed class AppRoute(val route: String) {
 
     data object RunLive : AppRoute("run_live")
 
+    data object RunRecovery : AppRoute("run_recovery")
+
     data object RunSummary : AppRoute("run_summary")
 
     data object Home : AppRoute("home")

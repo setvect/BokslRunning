@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun locationPermissionGateScreen(
-    uiState: LocationPermissionUiState,
+    uiState: LocationPermissionGateUiState,
     onAllowClick: () -> Unit,
     onOpenSettingsClick: () -> Unit,
     onLaterClick: () -> Unit,
@@ -37,7 +37,7 @@ fun locationPermissionGateScreen(
             )
             Text(
                 text =
-                    when (uiState) {
+                    when (uiState.permissionState) {
                         LocationPermissionUiState.ShowRequest ->
                             "권한을 허용하면 홈에서 바로 러닝 준비 화면으로 이어질 수 있습니다."
                         LocationPermissionUiState.Denied ->
@@ -55,7 +55,7 @@ fun locationPermissionGateScreen(
             ) {
                 Text(text = "허용")
             }
-            if (uiState == LocationPermissionUiState.PermanentlyDenied) {
+            if (uiState.permissionState == LocationPermissionUiState.PermanentlyDenied) {
                 TextButton(
                     onClick = onOpenSettingsClick,
                     modifier = Modifier.padding(top = 8.dp),

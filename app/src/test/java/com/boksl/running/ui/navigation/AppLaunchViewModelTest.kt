@@ -45,7 +45,7 @@ class AppLaunchViewModelTest {
     }
 
     @Test
-    fun resolveToActiveRunWhenInProgressSessionExists() {
+    fun resolveToRunRecoveryWhenInProgressSessionExists() {
         val state =
             resolveAppLaunchUiState(
                 profile = null,
@@ -53,6 +53,6 @@ class AppLaunchViewModelTest {
                 hasActiveRun = true,
             )
 
-        assertEquals(AppLaunchUiState.HasActiveRun, state)
+        assertEquals(AppLaunchUiState.NeedsRunRecovery, state)
     }
 }

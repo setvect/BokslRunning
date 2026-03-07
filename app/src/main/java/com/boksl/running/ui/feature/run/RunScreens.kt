@@ -43,7 +43,7 @@ fun runReadyScreen(
         title = "러닝 준비",
         body = {
             if (uiState.isOffline) {
-                offlineBanner()
+                runOfflineBanner()
             }
             runMapSection(
                 currentLocation = currentLocation,
@@ -94,7 +94,7 @@ fun runLiveScreen(
         title = "러닝 중",
         body = {
             if (uiState.isOffline) {
-                offlineBanner()
+                runOfflineBanner()
             }
             runMapSection(
                 currentLocation = currentLocation,
@@ -139,7 +139,7 @@ fun runSummaryScreen(
         title = "결과 요약",
         body = {
             if (uiState.isOffline) {
-                offlineBanner()
+                runOfflineBanner()
             }
             runMapSection(
                 currentLocation = routePoints.lastOrNull(),
@@ -150,6 +150,53 @@ fun runSummaryScreen(
             summaryCard(summarySession = summarySession, snapshot = uiState.snapshot)
             Button(onClick = onComplete, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "완료")
+            }
+        },
+    )
+}
+
+@Composable
+fun runRecoveryScreen(
+    uiState: RunRecoveryUiState,
+    onContinue: () -> Unit,
+    onDiscard: () -> Unit,
+) {
+    val session = uiState.activeSession
+
+    runScaffold(
+        title = "러닝 복구",
+        body = {
+            if (uiState.isOffline) {
+                runOfflineBanner()
+            }
+            Card {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(text = "진행 중이던 러닝이 있어요. 마지막 저장 지점부터 이어서 기록할까요?")
+                    Text(
+                        text = "앱이 꺼져 있던 구간은 기록되지 않을 수 있어요",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+            if (session != null) {
+                metricCard(
+                    title = "복구 대상",
+                    entries =
+                        listOf(
+                            "누적 거리" to "${session.stats.distanceMeters.formatDistanceKm()} km",
+                            "누적 시간" to session.stats.durationMillis.formatDurationText(),
+                            "평균 페이스" to session.stats.averagePaceSecPerKm.formatPaceText(),
+                        ),
+                )
+            }
+            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth(), enabled = session != null) {
+                Text(text = "이어하기")
+            }
+            TextButton(onClick = onDiscard, modifier = Modifier.fillMaxWidth(), enabled = session != null) {
+                Text(text = "폐기")
             }
         },
     )
@@ -178,7 +225,7 @@ private fun runScaffold(
 }
 
 @Composable
-private fun offlineBanner() {
+fun runOfflineBanner() {
     Card {
         Text(
             text = "기록은 저장되고, 지도 배경은 제한될 수 있어요.",

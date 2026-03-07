@@ -27,6 +27,12 @@ sealed interface LocationPermissionUiState {
     data object ShowRequest : LocationPermissionUiState
 }
 
+enum class PermissionReturnAction {
+    None,
+    CompleteOnboarding,
+    StartRun,
+}
+
 fun hasLocationPermission(context: Context): Boolean =
     locationPermissions.any { permission ->
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
