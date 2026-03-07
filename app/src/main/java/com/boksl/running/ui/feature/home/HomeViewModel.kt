@@ -2,7 +2,6 @@ package com.boksl.running.ui.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.boksl.running.domain.model.HomeSummary
 import com.boksl.running.domain.repository.ProfileRepository
 import com.boksl.running.domain.repository.RunningRepository
 import com.boksl.running.ui.feature.permission.LocationPermissionUiState
@@ -25,15 +24,13 @@ class HomeViewModel
         private val profileRepository: ProfileRepository,
     ) : ViewModel() {
         private val permissionDialogState = MutableStateFlow<LocationPermissionUiState?>(null)
-        private val showRunPlaceholder = MutableStateFlow(false)
 
         val uiState: StateFlow<HomeUiState> =
             combine(
                 runningRepository.observeHomeSummary(),
                 profileRepository.observeProfile(),
                 permissionDialogState,
-                showRunPlaceholder,
-            ) { summary, profile, dialogState, runPlaceholder ->
+            ) { summary, profile, dialogState ->
                 HomeUiState(
                     totalDistanceMeters = summary.totalDistanceMeters,
                     totalDurationMillis = summary.totalDurationMillis,
@@ -41,7 +38,6 @@ class HomeViewModel
                     totalCaloriesKcal = summary.totalCaloriesKcal,
                     hasProfile = profile != null,
                     permissionDialogState = dialogState,
-                    showRunPlaceholder = runPlaceholder,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -49,16 +45,8 @@ class HomeViewModel
                 initialValue = HomeUiState(),
             )
 
-        fun onRunStartRequested(
-            hasLocationPermission: Boolean,
-            shouldShowRationale: Boolean,
-        ) {
+        fun onRunStartRequested(shouldShowRationale: Boolean) {
             viewModelScope.launch {
-                if (hasLocationPermission) {
-                    showRunPlaceholder.value = true
-                    return@launch
-                }
-
                 val preferences = profileRepository.observeAppPreferences().first()
                 permissionDialogState.value =
                     resolveLocationPermissionUiState(
@@ -75,10 +63,6 @@ class HomeViewModel
         fun dismissPermissionDialog() {
             permissionDialogState.value = null
         }
-
-        fun dismissRunPlaceholder() {
-            showRunPlaceholder.value = false
-        }
     }
 
 data class HomeUiState(
@@ -88,5 +72,4 @@ data class HomeUiState(
     val totalCaloriesKcal: Double = 0.0,
     val hasProfile: Boolean = false,
     val permissionDialogState: LocationPermissionUiState? = null,
-    val showRunPlaceholder: Boolean = false,
 )

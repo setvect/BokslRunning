@@ -97,7 +97,7 @@
   - 최소 런 라우트 placeholder 연결 완료: `RunReady`, `RunLive`, `RunSummary`
   - Phase 3 단위 테스트 추가: 계산 유틸, 앱 시작 active session 분기, 엔진 상태 전이/복구
 
-- [ ] **Phase 4. 러닝 UI 연동**
+- [x] **Phase 4. 러닝 UI 연동**
 
 - 목표: 기록 엔진과 화면을 연결해 사용자 동작을 완성한다.
 - 주요 작업:
@@ -108,6 +108,7 @@
 - 산출물:
   - 스토리보드 4~7 구간 동작
   - 종료 후 요약/완료 이동 가능
+  - Google Maps 기반 현재 위치/Polyline 표시
 
 - [ ] **Phase 5. 기록 조회 기능 구현**
 

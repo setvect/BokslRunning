@@ -168,7 +168,6 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                         navController.navigate(AppRoute.RunReady.route)
                     } else {
                         viewModel.onRunStartRequested(
-                            hasLocationPermission = false,
                             shouldShowRationale = activity?.let(::shouldShowLocationPermissionRationale) ?: false,
                         )
                     }
@@ -181,7 +180,6 @@ fun appNavGraph(modifier: Modifier = Modifier) {
                     openAppSettings(context)
                     viewModel.dismissPermissionDialog()
                 },
-                onDismissRunPlaceholder = viewModel::dismissRunPlaceholder,
             )
         }
         composable(route = AppRoute.RunReady.route) {
@@ -201,8 +199,7 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             }
 
             runReadyScreen(
-                snapshot = uiState.snapshot,
-                isStarting = uiState.isStarting,
+                uiState = uiState,
                 onStartRun = viewModel::startRun,
                 onCancel = {
                     viewModel.discardRun()
@@ -227,7 +224,7 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             }
 
             runLiveScreen(
-                snapshot = uiState.snapshot,
+                uiState = uiState,
                 onRequestStop = viewModel::requestStop,
                 onConfirmSave = viewModel::confirmSave,
                 onCancelStop = viewModel::cancelStop,
@@ -238,9 +235,9 @@ fun appNavGraph(modifier: Modifier = Modifier) {
             val uiState by viewModel.uiState.collectAsState()
 
             runSummaryScreen(
-                snapshot = uiState.snapshot,
+                uiState = uiState,
                 onComplete = {
-                    navController.navigate(AppRoute.Home.route) {
+                    navController.navigate(AppRoute.History.route) {
                         popUpTo(AppRoute.Home.route) { inclusive = false }
                         launchSingleTop = true
                     }

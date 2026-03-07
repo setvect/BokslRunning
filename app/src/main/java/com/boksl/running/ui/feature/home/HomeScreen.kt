@@ -30,7 +30,6 @@ fun homeScreen(
     onOpenSettings: () -> Unit,
     onDismissPermissionDialog: () -> Unit,
     onOpenAppSettings: () -> Unit,
-    onDismissRunPlaceholder: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -92,19 +91,6 @@ fun homeScreen(
             uiState = dialogState,
             onDismiss = onDismissPermissionDialog,
             onOpenAppSettings = onOpenAppSettings,
-        )
-    }
-
-    if (uiState.showRunPlaceholder) {
-        AlertDialog(
-            onDismissRequest = onDismissRunPlaceholder,
-            title = { Text(text = "러닝 준비 중") },
-            text = { Text(text = "Ready 화면과 기록 엔진은 Phase 3에서 구현됩니다.") },
-            confirmButton = {
-                TextButton(onClick = onDismissRunPlaceholder) {
-                    Text(text = "확인")
-                }
-            },
         )
     }
 }
