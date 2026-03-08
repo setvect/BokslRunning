@@ -8,9 +8,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.boksl.running.BuildConfig
@@ -27,8 +34,10 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
+import android.view.MotionEvent
 import java.util.Locale
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun runMapSection(
     currentLocation: LatLng?,
@@ -36,6 +45,7 @@ fun runMapSection(
     modifier: Modifier = Modifier,
     maxZoom: Float = DEFAULT_MAX_ZOOM,
     minZoom: Float = DEFAULT_MIN_ZOOM,
+    onTouchActiveChanged: ((Boolean) -> Unit)? = null,
 ) {
     Card(modifier = modifier.height(260.dp)) {
         if (BuildConfig.MAPS_API_KEY.isBlank()) {
@@ -46,6 +56,15 @@ fun runMapSection(
         val cameraPositionState = rememberCameraPositionState()
         val bounds = routePoints.toBoundsOrNull()
         val context = LocalContext.current
+        var isTouchActive by remember { mutableStateOf(false) }
+
+        DisposableEffect(onTouchActiveChanged) {
+            onDispose {
+                if (isTouchActive) {
+                    onTouchActiveChanged?.invoke(false)
+                }
+            }
+        }
 
         LaunchedEffect(bounds, currentLocation) {
             moveCamera(
@@ -58,7 +77,30 @@ fun runMapSection(
         }
 
         GoogleMap(
-            modifier = Modifier.fillMaxSize(),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .pointerInteropFilter { motionEvent ->
+                        when (motionEvent.actionMasked) {
+                            MotionEvent.ACTION_DOWN,
+                            MotionEvent.ACTION_POINTER_DOWN,
+                            MotionEvent.ACTION_MOVE -> {
+                                if (!isTouchActive) {
+                                    isTouchActive = true
+                                    onTouchActiveChanged?.invoke(true)
+                                }
+                            }
+                            MotionEvent.ACTION_UP,
+                            MotionEvent.ACTION_POINTER_UP,
+                            MotionEvent.ACTION_CANCEL -> {
+                                if (isTouchActive) {
+                                    isTouchActive = false
+                                    onTouchActiveChanged?.invoke(false)
+                                }
+                            }
+                        }
+                        false
+                    },
             cameraPositionState = cameraPositionState,
             properties =
                 MapProperties(
