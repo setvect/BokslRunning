@@ -378,6 +378,54 @@ class RunningRepositoryTest {
         }
 
     @Test
+    fun deleteSessionRemovesSavedSessionFromPagingSummaryAndMonthlyStats() =
+        runTest {
+            repository.insertSession(
+                savedSession(
+                    externalId = "saved-jan",
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 1, dayOfMonth = 8),
+                    durationMillis = 300_000L,
+                    distanceMeters = 1_000.0,
+                ),
+            )
+            val deletedSessionId =
+                repository.insertSession(
+                    savedSession(
+                        externalId = "saved-feb",
+                        startedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 17),
+                        durationMillis = 600_000L,
+                        distanceMeters = 2_000.0,
+                    ),
+                )
+            repository.insertSession(
+                RunningSession(
+                    externalId = "discarded-feb",
+                    status = SessionStatus.DISCARDED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 20),
+                    endedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 20) + 600_000L,
+                    stats = RunStats(600_000L, 5_000.0, 120.0, 7.0, 450.0),
+                    createdAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 20),
+                    updatedAtEpochMillis = localEpochMillis(year = 2026, month = 2, dayOfMonth = 20) + 600_000L,
+                ),
+            )
+
+            repository.deleteSession(deletedSessionId)
+
+            val savedSessions = repository.observeSavedSessionsPaged().asSnapshot()
+            val summary = repository.observeHomeSummary().first()
+            val monthlyStats = repository.observeMonthlyStats().first()
+
+            assertEquals(listOf("saved-jan"), savedSessions.map { it.externalId })
+            assertEquals(1_000.0, summary.totalDistanceMeters, 0.0)
+            assertEquals(300_000L, summary.totalDurationMillis)
+            assertEquals(YearMonth.of(2026, 1), monthlyStats[3].yearMonth)
+            assertEquals(1_000.0, monthlyStats[3].totalDistanceMeters, 0.0)
+            assertEquals(YearMonth.of(2026, 2), monthlyStats[4].yearMonth)
+            assertEquals(0.0, monthlyStats[4].totalDistanceMeters, 0.0)
+            assertEquals(0L, monthlyStats[4].totalDurationMillis)
+        }
+
+    @Test
     fun observeMonthlyStatsReturnsLatestSixMonthsWhenNoSavedSessions() =
         runTest {
             val monthlyStats = repository.observeMonthlyStats().first()

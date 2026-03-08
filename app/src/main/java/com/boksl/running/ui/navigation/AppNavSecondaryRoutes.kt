@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.boksl.running.ui.feature.history.HistoryDetailViewModel
+import com.boksl.running.ui.feature.history.HistoryDetailEvent
 import com.boksl.running.ui.feature.history.HistoryListEvent
 import com.boksl.running.ui.feature.history.HistoryListViewModel
 import com.boksl.running.ui.feature.history.HistoryScreenActions
@@ -108,9 +109,28 @@ private fun NavGraphBuilder.addHistoryDetailRoute(navController: NavHostControll
         val viewModel: HistoryDetailViewModel = hiltViewModel()
         val uiState by viewModel.uiState.collectAsState()
 
+        LaunchedEffect(Unit) {
+            viewModel.event.collect { event ->
+                when (event) {
+                    HistoryDetailEvent.NavigateToHistoryList -> {
+                        val popped = navController.popBackStack(AppRoute.History.route, inclusive = false)
+                        if (!popped) {
+                            navController.navigate(AppRoute.History.route) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         historyDetailScreen(
             uiState = uiState,
             onNavigateUp = { navController.navigateUp() },
+            onDeleteClick = viewModel::onDeleteClick,
+            onDismissDeleteConfirmation = viewModel::onDismissDeleteConfirmation,
+            onConfirmDelete = viewModel::onConfirmDelete,
+            onClearDeleteError = viewModel::onClearDeleteError,
         )
     }
 }

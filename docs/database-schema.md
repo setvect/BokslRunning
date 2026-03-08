@@ -1,6 +1,6 @@
 # Database Schema (Phase 1 확정)
 
-프로젝트: 복슬달리기(BokslRunning)  
+프로젝트: 복슬달리기(BokslRunning)
 기준 문서: `docs/PRD.md`, `docs/implementation-plan.md`
 
 ## 1. 개요
@@ -18,20 +18,20 @@
 
 ### 2.1 `running_sessions`
 
-| 컬럼 | 타입 | Null | 제약/설명 |
-|---|---|---|---|
-| `id` | INTEGER | N | PK, AUTOINCREMENT |
-| `external_id` | TEXT | N | UNIQUE, 내보내기/중복 판정용 UUID |
-| `status` | TEXT | N | `IN_PROGRESS` / `SAVED` / `DISCARDED` |
-| `started_at_epoch_millis` | INTEGER | N | 시작 시각 |
-| `ended_at_epoch_millis` | INTEGER | Y | 종료 시각 |
-| `duration_millis` | INTEGER | N | 기본값 0, `>= 0` |
-| `distance_meters` | REAL | N | 기본값 0, `>= 0` |
-| `average_pace_sec_per_km` | REAL | Y | `>= 0` |
-| `max_speed_mps` | REAL | N | 기본값 0, `>= 0` |
-| `calorie_kcal` | REAL | Y | `>= 0` |
-| `created_at_epoch_millis` | INTEGER | N | 생성 시각 |
-| `updated_at_epoch_millis` | INTEGER | N | 수정 시각 |
+| 컬럼                      | 타입    | Null | 제약/설명                             |
+| ------------------------- | ------- | ---- | ------------------------------------- |
+| `id`                      | INTEGER | N    | PK, AUTOINCREMENT                     |
+| `external_id`             | TEXT    | N    | UNIQUE, 내보내기/중복 판정용 UUID     |
+| `status`                  | TEXT    | N    | `IN_PROGRESS` / `SAVED` / `DISCARDED` |
+| `started_at_epoch_millis` | INTEGER | N    | 시작 시각                             |
+| `ended_at_epoch_millis`   | INTEGER | Y    | 종료 시각                             |
+| `duration_millis`         | INTEGER | N    | 기본값 0, `>= 0`                      |
+| `distance_meters`         | REAL    | N    | 기본값 0, `>= 0`                      |
+| `average_pace_sec_per_km` | REAL    | Y    | `>= 0`                                |
+| `max_speed_mps`           | REAL    | N    | 기본값 0, `>= 0`                      |
+| `calorie_kcal`            | REAL    | Y    | `>= 0`                                |
+| `created_at_epoch_millis` | INTEGER | N    | 생성 시각                             |
+| `updated_at_epoch_millis` | INTEGER | N    | 수정 시각                             |
 
 인덱스:
 - `(external_id)` UNIQUE
@@ -40,18 +40,18 @@
 
 ### 2.2 `track_points`
 
-| 컬럼 | 타입 | Null | 제약/설명 |
-|---|---|---|---|
-| `id` | INTEGER | N | PK, AUTOINCREMENT |
-| `external_id` | TEXT | N | UNIQUE, 내보내기/중복 판정용 UUID |
-| `session_id` | INTEGER | N | FK -> `running_sessions.id`, ON DELETE CASCADE |
-| `sequence` | INTEGER | N | 세션 내 순번, `>= 0` |
-| `latitude` | REAL | N | `[-90, 90]` |
-| `longitude` | REAL | N | `[-180, 180]` |
-| `altitude_meters` | REAL | Y | 고도 |
-| `accuracy_meters` | REAL | Y | `>= 0` |
-| `speed_mps` | REAL | Y | `>= 0` |
-| `recorded_at_epoch_millis` | INTEGER | N | 측정 시각 |
+| 컬럼                       | 타입    | Null | 제약/설명                                      |
+| -------------------------- | ------- | ---- | ---------------------------------------------- |
+| `id`                       | INTEGER | N    | PK, AUTOINCREMENT                              |
+| `external_id`              | TEXT    | N    | UNIQUE, 내보내기/중복 판정용 UUID              |
+| `session_id`               | INTEGER | N    | FK -> `running_sessions.id`, ON DELETE CASCADE |
+| `sequence`                 | INTEGER | N    | 세션 내 순번, `>= 0`                           |
+| `latitude`                 | REAL    | N    | `[-90, 90]`                                    |
+| `longitude`                | REAL    | N    | `[-180, 180]`                                  |
+| `altitude_meters`          | REAL    | Y    | 고도                                           |
+| `accuracy_meters`          | REAL    | Y    | `>= 0`                                         |
+| `speed_mps`                | REAL    | Y    | `>= 0`                                         |
+| `recorded_at_epoch_millis` | INTEGER | N    | 측정 시각                                      |
 
 인덱스:
 - `(external_id)` UNIQUE

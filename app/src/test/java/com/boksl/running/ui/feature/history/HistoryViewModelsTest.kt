@@ -18,12 +18,14 @@ import com.boksl.running.domain.repository.RunningRepository
 import com.boksl.running.ui.feature.permission.LocationPermissionUiState
 import com.boksl.running.ui.feature.permission.PermissionReturnAction
 import com.boksl.running.ui.navigation.AppRoute
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -231,21 +233,137 @@ class HistoryViewModelsTest {
 
             assertTrue(missingViewModel.uiState.value.isNotFound)
         }
+
+    @Test
+    fun historyDetailDeleteShowsConfirmationAndNavigatesAfterSuccess() =
+        runTest {
+            val session =
+                runningSession(
+                    id = 9L,
+                    externalId = "saved-9",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 2_000L,
+                    stats = runStats(durationMillis = 120_000L, distanceMeters = 500.0, averagePace = 240.0),
+                )
+            val repository =
+                FakeRunningRepository(
+                    sessions = mutableListOf(session),
+                    trackPointsBySessionId = emptyMap(),
+                )
+            val viewModel =
+                HistoryDetailViewModel(
+                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.SESSION_ID_ARG to 9L)),
+                    runningRepository = repository,
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+
+            viewModel.onDeleteClick()
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.showDeleteConfirmation)
+
+            val eventDeferred = async { viewModel.event.first() }
+            viewModel.onConfirmDelete()
+            advanceUntilIdle()
+
+            assertEquals(listOf(9L), repository.deletedSessionIds)
+            assertEquals(HistoryDetailEvent.NavigateToHistoryList, eventDeferred.await())
+            assertFalse(viewModel.uiState.value.showDeleteConfirmation)
+        }
+
+    @Test
+    fun historyDetailDeleteFailureShowsErrorAndKeepsSession() =
+        runTest {
+            val session =
+                runningSession(
+                    id = 9L,
+                    externalId = "saved-9",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 2_000L,
+                    stats = runStats(durationMillis = 120_000L, distanceMeters = 500.0, averagePace = 240.0),
+                )
+            val repository =
+                FakeRunningRepository(
+                    sessions = mutableListOf(session),
+                    trackPointsBySessionId = emptyMap(),
+                    deleteFailureMessage = "삭제 실패",
+                )
+            val viewModel =
+                HistoryDetailViewModel(
+                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.SESSION_ID_ARG to 9L)),
+                    runningRepository = repository,
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+
+            viewModel.onDeleteClick()
+            viewModel.onConfirmDelete()
+            advanceUntilIdle()
+
+            assertEquals("삭제 실패", viewModel.uiState.value.deleteErrorMessage)
+            assertEquals(9L, viewModel.uiState.value.session?.id)
+            assertFalse(viewModel.uiState.value.isDeleting)
+        }
+
+    @Test
+    fun historyDetailDeleteIgnoresRepeatedConfirmWhileDeleting() =
+        runTest {
+            val session =
+                runningSession(
+                    id = 9L,
+                    externalId = "saved-9",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = 2_000L,
+                    stats = runStats(durationMillis = 120_000L, distanceMeters = 500.0, averagePace = 240.0),
+                )
+            val deleteGate = CompletableDeferred<Unit>()
+            val repository =
+                FakeRunningRepository(
+                    sessions = mutableListOf(session),
+                    trackPointsBySessionId = emptyMap(),
+                    deleteGate = deleteGate,
+                )
+            val viewModel =
+                HistoryDetailViewModel(
+                    savedStateHandle = SavedStateHandle(mapOf(AppRoute.HistoryDetail.SESSION_ID_ARG to 9L)),
+                    runningRepository = repository,
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+
+            viewModel.onDeleteClick()
+            viewModel.onConfirmDelete()
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.isDeleting)
+            assertEquals(listOf(9L), repository.deletedSessionIds)
+
+            viewModel.onConfirmDelete()
+            advanceUntilIdle()
+            assertEquals(listOf(9L), repository.deletedSessionIds)
+
+            deleteGate.complete(Unit)
+            advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isDeleting)
+        }
 }
 
 private class FakeRunningRepository(
     sessions: MutableList<RunningSession> = mutableListOf(),
     trackPointsBySessionId: Map<Long, List<TrackPoint>> = emptyMap(),
+    private val deleteFailureMessage: String? = null,
+    private val deleteGate: CompletableDeferred<Unit>? = null,
 ) : RunningRepository {
-    private val sessionsState = MutableStateFlow(sessions)
-    private val trackPointsState = MutableStateFlow(trackPointsBySessionId)
+    private val sessionsState = MutableStateFlow<List<RunningSession>>(sessions)
+    private val trackPointsState = MutableStateFlow<Map<Long, List<TrackPoint>>>(trackPointsBySessionId)
+    val deletedSessionIds = mutableListOf<Long>()
 
     override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 
     override fun observeSession(sessionId: Long): Flow<RunningSession?> =
-        flowOf(sessionsState.value.firstOrNull { it.id == sessionId })
+        sessionsState.map { sessions -> sessions.firstOrNull { it.id == sessionId } }
 
     override fun observeSavedSessionsPaged(): Flow<PagingData<RunningSession>> =
         flowOf(
@@ -260,7 +378,7 @@ private class FakeRunningRepository(
         flowOf(sessionsState.value.sortedByDescending { it.startedAtEpochMillis }.take(limit))
 
     override fun observeTrackPoints(sessionId: Long): Flow<List<TrackPoint>> =
-        flowOf(trackPointsState.value[sessionId].orEmpty())
+        trackPointsState.map { trackPoints -> trackPoints[sessionId].orEmpty() }
 
     override suspend fun getSession(sessionId: Long): RunningSession? =
         sessionsState.value.firstOrNull { it.id == sessionId }
@@ -274,7 +392,13 @@ private class FakeRunningRepository(
 
     override suspend fun insertTrackPoints(points: List<TrackPoint>) = Unit
 
-    override suspend fun deleteSession(sessionId: Long) = Unit
+    override suspend fun deleteSession(sessionId: Long) {
+        deletedSessionIds += sessionId
+        deleteFailureMessage?.let { message -> error(message) }
+        deleteGate?.await()
+        sessionsState.value = sessionsState.value.filterNot { it.id == sessionId }
+        trackPointsState.value = trackPointsState.value - sessionId
+    }
 }
 
 private class FakeProfileRepository : ProfileRepository {

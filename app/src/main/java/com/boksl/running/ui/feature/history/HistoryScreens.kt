@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -85,7 +86,13 @@ fun historyScreen(
 fun historyDetailScreen(
     uiState: HistoryDetailUiState,
     onNavigateUp: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onDismissDeleteConfirmation: () -> Unit,
+    onConfirmDelete: () -> Unit,
+    onClearDeleteError: () -> Unit,
 ) {
+    val canDelete = uiState.session != null && !uiState.isDeleting && !uiState.isNotFound
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -95,6 +102,19 @@ fun historyDetailScreen(
                         Text(text = "뒤로")
                     }
                 },
+                actions = {
+                    if (uiState.session != null) {
+                        TextButton(
+                            onClick = onDeleteClick,
+                            enabled = canDelete,
+                        ) {
+                            Text(
+                                text = "삭제",
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                },
             )
         },
     ) { innerPadding ->
@@ -102,6 +122,28 @@ fun historyDetailScreen(
             uiState = uiState,
             innerPadding = innerPadding,
             onNavigateUp = onNavigateUp,
+            onClearDeleteError = onClearDeleteError,
+        )
+    }
+
+    if (uiState.showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = onDismissDeleteConfirmation,
+            title = { Text(text = "기록을 삭제할까요?") },
+            text = { Text(text = "삭제한 기록은 복구할 수 없어요.") },
+            confirmButton = {
+                TextButton(onClick = onConfirmDelete) {
+                    Text(
+                        text = "삭제",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissDeleteConfirmation) {
+                    Text(text = "취소")
+                }
+            },
         )
     }
 }
@@ -187,6 +229,7 @@ private fun historyDetailContent(
     uiState: HistoryDetailUiState,
     innerPadding: PaddingValues,
     onNavigateUp: () -> Unit,
+    onClearDeleteError: () -> Unit,
 ) {
     when {
         uiState.isLoading -> historyLoadingState(innerPadding = innerPadding)
@@ -199,7 +242,12 @@ private fun historyDetailContent(
                         .padding(16.dp),
                 onNavigateUp = onNavigateUp,
             )
-        else -> historyDetailBody(uiState = uiState, innerPadding = innerPadding)
+        else ->
+            historyDetailBody(
+                uiState = uiState,
+                innerPadding = innerPadding,
+                onClearDeleteError = onClearDeleteError,
+            )
     }
 }
 
@@ -207,6 +255,7 @@ private fun historyDetailContent(
 private fun historyDetailBody(
     uiState: HistoryDetailUiState,
     innerPadding: PaddingValues,
+    onClearDeleteError: () -> Unit,
 ) {
     val session = checkNotNull(uiState.session)
     val routePoints = uiState.trackPoints.map { it.toLatLng() }
@@ -224,6 +273,12 @@ private fun historyDetailBody(
                 ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        uiState.deleteErrorMessage?.let { message ->
+            historyDeleteErrorCard(
+                message = message,
+                onClearDeleteError = onClearDeleteError,
+            )
+        }
         Text(
             text = session.startedAtEpochMillis.formatSessionDateTimeText(),
             style = MaterialTheme.typography.titleLarge,
@@ -261,6 +316,28 @@ private fun historyDetailBody(
                     label = "칼로리",
                     value = session.stats.calorieKcal.formatCaloriesText(),
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun historyDeleteErrorCard(
+    message: String,
+    onClearDeleteError: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            TextButton(onClick = onClearDeleteError) {
+                Text(text = "닫기")
             }
         }
     }

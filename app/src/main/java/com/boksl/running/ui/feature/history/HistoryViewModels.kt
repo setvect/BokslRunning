@@ -91,27 +91,72 @@ class HistoryDetailViewModel
     @Inject
     constructor(
         savedStateHandle: SavedStateHandle,
-        runningRepository: RunningRepository,
+        private val runningRepository: RunningRepository,
     ) : ViewModel() {
         private val sessionId: Long = savedStateHandle[AppRoute.HistoryDetail.SESSION_ID_ARG] ?: INVALID_SESSION_ID
+        private val showDeleteConfirmation = MutableStateFlow(false)
+        private val isDeleting = MutableStateFlow(false)
+        private val deleteErrorMessage = MutableStateFlow<String?>(null)
+        private val eventChannel = Channel<HistoryDetailEvent>(capacity = Channel.BUFFERED)
+        val event = eventChannel.receiveAsFlow()
 
         val uiState: StateFlow<HistoryDetailUiState> =
             combine(
                 runningRepository.observeSession(sessionId),
                 runningRepository.observeTrackPoints(sessionId),
-            ) { session, trackPoints ->
+                showDeleteConfirmation,
+                isDeleting,
+                deleteErrorMessage,
+            ) { session, trackPoints, showDeleteConfirmation, isDeleting, deleteErrorMessage ->
                 val savedSession = session?.takeIf { it.status == SessionStatus.SAVED }
                 HistoryDetailUiState(
                     isLoading = false,
                     session = savedSession,
                     trackPoints = if (savedSession != null) trackPoints else emptyList(),
                     isNotFound = savedSession == null,
+                    showDeleteConfirmation = showDeleteConfirmation && savedSession != null,
+                    isDeleting = isDeleting,
+                    deleteErrorMessage = deleteErrorMessage,
                 )
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(STATE_TIMEOUT_MILLIS),
                 initialValue = HistoryDetailUiState(isLoading = true),
             )
+
+        fun onDeleteClick() {
+            if (!uiState.value.canDelete) return
+            showDeleteConfirmation.value = true
+        }
+
+        fun onDismissDeleteConfirmation() {
+            showDeleteConfirmation.value = false
+        }
+
+        fun onConfirmDelete() {
+            val session = uiState.value.session ?: return
+            if (!uiState.value.canDelete) return
+
+            showDeleteConfirmation.value = false
+            isDeleting.value = true
+            deleteErrorMessage.value = null
+
+            viewModelScope.launch {
+                runCatching {
+                    runningRepository.deleteSession(session.id)
+                }.onSuccess {
+                    isDeleting.value = false
+                    eventChannel.send(HistoryDetailEvent.NavigateToHistoryList)
+                }.onFailure { throwable ->
+                    isDeleting.value = false
+                    deleteErrorMessage.value = throwable.message ?: "기록 삭제에 실패했습니다."
+                }
+            }
+        }
+
+        fun onClearDeleteError() {
+            deleteErrorMessage.value = null
+        }
     }
 
 data class HistoryListUiState(
@@ -136,7 +181,14 @@ data class HistoryDetailUiState(
     val session: RunningSession? = null,
     val trackPoints: List<TrackPoint> = emptyList(),
     val isNotFound: Boolean = false,
+    val showDeleteConfirmation: Boolean = false,
+    val isDeleting: Boolean = false,
+    val deleteErrorMessage: String? = null,
 )
+
+sealed interface HistoryDetailEvent {
+    data object NavigateToHistoryList : HistoryDetailEvent
+}
 
 private fun RunningSession.toHistoryListItem(): HistoryListItemUiState =
     HistoryListItemUiState(
@@ -146,6 +198,9 @@ private fun RunningSession.toHistoryListItem(): HistoryListItemUiState =
         durationMillis = stats.durationMillis,
         averagePaceSecPerKm = stats.averagePaceSecPerKm,
     )
+
+private val HistoryDetailUiState.canDelete: Boolean
+    get() = session != null && !isDeleting && !isNotFound
 
 private const val INVALID_SESSION_ID = -1L
 private const val STATE_TIMEOUT_MILLIS = 5_000L
