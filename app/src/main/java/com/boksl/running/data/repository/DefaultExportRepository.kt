@@ -3,8 +3,7 @@ package com.boksl.running.data.repository
 import android.content.Context
 import com.boksl.running.core.di.IoDispatcher
 import com.boksl.running.data.export.buildExportBundle
-import com.boksl.running.data.local.db.dao.RunningSessionDao
-import com.boksl.running.data.local.db.dao.TrackPointDao
+import com.boksl.running.data.local.db.AppDatabase
 import com.boksl.running.data.local.preferences.ProfilePreferencesDataSource
 import com.boksl.running.domain.model.ExportProgress
 import com.boksl.running.domain.model.SessionStatus
@@ -20,6 +19,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.IOException
 import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,8 +29,7 @@ class DefaultExportRepository
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
-        private val runningSessionDao: RunningSessionDao,
-        private val trackPointDao: TrackPointDao,
+        private val database: AppDatabase,
         private val profilePreferencesDataSource: ProfilePreferencesDataSource,
         @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val clock: Clock,
@@ -44,9 +43,10 @@ class DefaultExportRepository
                     }
                 val outputFile = File(exportDirectory, EXPORT_FILE_NAME)
                 val temporaryFile = File(exportDirectory, TEMP_FILE_NAME)
+                val runningSessionDao = database.runningSessionDao()
+                val trackPointDao = database.trackPointDao()
 
-                outputFile.delete()
-                temporaryFile.delete()
+                deleteFiles(outputFile, temporaryFile)
 
                 try {
                     val sessionEntities = runningSessionDao.getByStatus(SessionStatus.SAVED)
@@ -54,7 +54,7 @@ class DefaultExportRepository
 
                     emit(ExportProgress.Running(totalSessions = totalSessions, completedSessions = 0))
 
-                    sessionEntities.forEachIndexed { index, session ->
+                    sessionEntities.forEachIndexed { index, _ ->
                         currentCoroutineContext().ensureActive()
                         emit(ExportProgress.Running(totalSessions = totalSessions, completedSessions = index + 1))
                     }
@@ -83,15 +83,23 @@ class DefaultExportRepository
 
                     emit(ExportProgress.Completed(filePath = outputFile.absolutePath))
                 } catch (cancellationException: CancellationException) {
-                    outputFile.delete()
-                    temporaryFile.delete()
+                    deleteFiles(outputFile, temporaryFile)
                     throw cancellationException
-                } catch (throwable: Throwable) {
-                    outputFile.delete()
-                    temporaryFile.delete()
-                    emit(ExportProgress.Error(message = throwable.message ?: EXPORT_FAILURE_MESSAGE))
+                } catch (exception: IOException) {
+                    deleteFiles(outputFile, temporaryFile)
+                    emit(ExportProgress.Error(message = exception.message ?: EXPORT_FAILURE_MESSAGE))
+                } catch (exception: IllegalStateException) {
+                    deleteFiles(outputFile, temporaryFile)
+                    emit(ExportProgress.Error(message = exception.message ?: EXPORT_FAILURE_MESSAGE))
+                } catch (exception: SecurityException) {
+                    deleteFiles(outputFile, temporaryFile)
+                    emit(ExportProgress.Error(message = exception.message ?: EXPORT_FAILURE_MESSAGE))
                 }
             }.flowOn(ioDispatcher)
+
+        private fun deleteFiles(vararg files: File) {
+            files.forEach { file -> file.delete() }
+        }
 
         private companion object {
             const val EXPORT_DIRECTORY_NAME = "exports"

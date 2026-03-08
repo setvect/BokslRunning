@@ -11,8 +11,6 @@ import com.boksl.running.data.export.buildExportBundle
 import com.boksl.running.data.import.toDomain
 import com.boksl.running.data.import.toEntity
 import com.boksl.running.data.local.db.AppDatabase
-import com.boksl.running.data.local.db.dao.RunningSessionDao
-import com.boksl.running.data.local.db.dao.TrackPointDao
 import com.boksl.running.data.local.preferences.ProfilePreferencesDataSource
 import com.boksl.running.domain.model.ImportProgress
 import com.boksl.running.domain.model.ImportResult
@@ -31,6 +29,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.time.Clock
 import javax.inject.Inject
@@ -38,37 +37,28 @@ import javax.inject.Singleton
 
 @Singleton
 class DefaultImportRepository internal constructor(
-    @ApplicationContext private val context: Context,
     private val contentResolver: ContentResolver,
-    private val database: AppDatabase,
-    private val runningSessionDao: RunningSessionDao,
-    private val trackPointDao: TrackPointDao,
-    private val profilePreferencesDataSource: ProfilePreferencesDataSource,
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
-    private val clock: Clock,
-    private val json: Json,
+    private val dependencies: Dependencies,
     private val backupDirectoryProvider: () -> File,
 ) : ImportRepository {
     @Inject
     constructor(
         @ApplicationContext context: Context,
         database: AppDatabase,
-        runningSessionDao: RunningSessionDao,
-        trackPointDao: TrackPointDao,
         profilePreferencesDataSource: ProfilePreferencesDataSource,
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
         clock: Clock,
         json: Json,
     ) : this(
-        context = context,
         contentResolver = context.contentResolver,
-        database = database,
-        runningSessionDao = runningSessionDao,
-        trackPointDao = trackPointDao,
-        profilePreferencesDataSource = profilePreferencesDataSource,
-        ioDispatcher = ioDispatcher,
-        clock = clock,
-        json = json,
+        dependencies =
+            Dependencies(
+                database = database,
+                profilePreferencesDataSource = profilePreferencesDataSource,
+                ioDispatcher = ioDispatcher,
+                clock = clock,
+                json = json,
+            ),
         backupDirectoryProvider = { File(context.filesDir, BACKUP_DIRECTORY_NAME) },
     )
 
@@ -80,92 +70,97 @@ class DefaultImportRepository internal constructor(
                 } ?: throw IllegalStateException(FILE_OPEN_FAILURE_MESSAGE)
 
             importAllData(jsonBytes).collect { progress -> emit(progress) }
-        }.flowOn(ioDispatcher)
+        }.flowOn(dependencies.ioDispatcher)
 
     internal fun importAllData(jsonBytes: ByteArray): Flow<ImportProgress> =
         flow {
             try {
-                val fileHash = jsonBytes.sha256()
-                if (profilePreferencesDataSource.getImportedFileHashes().contains(fileHash)) {
-                    emit(
-                        ImportProgress.Completed(
-                            ImportResult(
-                                addedSessionCount = 0,
-                                duplicateSessionCount = 0,
-                                appliedProfile = false,
-                                wasDuplicateFile = true,
-                            ),
-                        ),
-                    )
-                    return@flow
-                }
+                importAllDataInternal(jsonBytes).collect { progress -> emit(progress) }
+            } catch (cancellationException: CancellationException) {
+                throw cancellationException
+            } catch (exception: IOException) {
+                emit(ImportProgress.Error(message = exception.message ?: IMPORT_FAILURE_MESSAGE))
+            } catch (exception: IllegalStateException) {
+                emit(ImportProgress.Error(message = exception.message ?: IMPORT_FAILURE_MESSAGE))
+            } catch (exception: SecurityException) {
+                emit(ImportProgress.Error(message = exception.message ?: IMPORT_FAILURE_MESSAGE))
+            }
+        }.flowOn(dependencies.ioDispatcher)
 
-                val importBundle = json.decodeImportBundle(jsonBytes)
-
-                emit(ImportProgress.BackingUp)
-                createBackupFile()
-                currentCoroutineContext().ensureActive()
-
-                emit(ImportProgress.Importing)
-                val currentProfile = profilePreferencesDataSource.observeProfile().first()
-                val mergeResult = mergeImportBundle(importBundle)
-                currentCoroutineContext().ensureActive()
-
-                val appliedProfile = currentProfile == null && importBundle.profile != null
-                if (currentProfile == null) {
-                    importBundle.profile?.let { profilePreferencesDataSource.saveProfile(it.toDomain()) }
-                    profilePreferencesDataSource.saveAppPreferences(importBundle.appPreferences.toDomain())
-                }
-                profilePreferencesDataSource.addImportedFileHash(fileHash)
-
+    private fun importAllDataInternal(jsonBytes: ByteArray): Flow<ImportProgress> =
+        flow {
+            val fileHash = jsonBytes.sha256()
+            if (dependencies.profilePreferencesDataSource.getImportedFileHashes().contains(fileHash)) {
                 emit(
                     ImportProgress.Completed(
                         ImportResult(
-                            addedSessionCount = mergeResult.addedSessionCount,
-                            duplicateSessionCount = mergeResult.duplicateSessionCount,
-                            appliedProfile = appliedProfile,
-                            wasDuplicateFile = false,
+                            addedSessionCount = 0,
+                            duplicateSessionCount = 0,
+                            appliedProfile = false,
+                            wasDuplicateFile = true,
                         ),
                     ),
                 )
-            } catch (cancellationException: CancellationException) {
-                throw cancellationException
-            } catch (throwable: Throwable) {
-                emit(ImportProgress.Error(message = throwable.message ?: IMPORT_FAILURE_MESSAGE))
+                return@flow
             }
-        }.flowOn(ioDispatcher)
+
+            val importBundle = dependencies.json.decodeImportBundle(jsonBytes)
+
+            emit(ImportProgress.BackingUp)
+            createBackupFile()
+            currentCoroutineContext().ensureActive()
+
+            emit(ImportProgress.Importing)
+            val currentProfile = dependencies.profilePreferencesDataSource.observeProfile().first()
+            val mergeResult = mergeImportBundle(importBundle)
+            currentCoroutineContext().ensureActive()
+
+            val appliedProfile = currentProfile == null && importBundle.profile != null
+            if (currentProfile == null) {
+                importBundle.profile?.let { dependencies.profilePreferencesDataSource.saveProfile(it.toDomain()) }
+                dependencies.profilePreferencesDataSource.saveAppPreferences(importBundle.appPreferences.toDomain())
+            }
+            dependencies.profilePreferencesDataSource.addImportedFileHash(fileHash)
+
+            emit(
+                ImportProgress.Completed(
+                    ImportResult(
+                        addedSessionCount = mergeResult.addedSessionCount,
+                        duplicateSessionCount = mergeResult.duplicateSessionCount,
+                        appliedProfile = appliedProfile,
+                        wasDuplicateFile = false,
+                    ),
+                ),
+            )
+        }
 
     private suspend fun createBackupFile() {
-        val backupDirectory =
-            backupDirectoryProvider().apply {
-                if (!exists() && !mkdirs()) {
-                    throw IllegalStateException(BACKUP_FAILURE_MESSAGE)
-                }
-                if (!isDirectory) {
-                    throw IllegalStateException(BACKUP_FAILURE_MESSAGE)
-                }
-            }
-        val backupFile = File(backupDirectory, "bokslrunning_backup_${clock.millis()}.json")
+        val runningSessionDao = dependencies.database.runningSessionDao()
+        val trackPointDao = dependencies.database.trackPointDao()
+        val backupDirectory = resolveBackupDirectory()
+        val backupFile = File(backupDirectory, "bokslrunning_backup_${dependencies.clock.millis()}.json")
         val backupBundle =
             buildExportBundle(
                 runningSessionDao = runningSessionDao,
                 trackPointDao = trackPointDao,
-                profilePreferencesDataSource = profilePreferencesDataSource,
-                clock = clock,
+                profilePreferencesDataSource = dependencies.profilePreferencesDataSource,
+                clock = dependencies.clock,
             )
 
         runCatching {
             backupFile.writeText(
-                text = json.encodeToString(backupBundle),
+                text = dependencies.json.encodeToString(backupBundle),
                 charset = Charsets.UTF_8,
             )
-        }.getOrElse { throwable ->
-            throw IllegalStateException(throwable.message ?: BACKUP_FAILURE_MESSAGE, throwable)
+        }.getOrElse { exception ->
+            throw IllegalStateException(exception.message ?: BACKUP_FAILURE_MESSAGE, exception)
         }
     }
 
     private suspend fun mergeImportBundle(importBundle: ExportBundleDto): ImportMergeResult =
-        database.withTransaction {
+        dependencies.database.withTransaction {
+            val runningSessionDao = dependencies.database.runningSessionDao()
+            val trackPointDao = dependencies.database.trackPointDao()
             var addedSessionCount = 0
             var duplicateSessionCount = 0
 
@@ -200,6 +195,15 @@ class DefaultImportRepository internal constructor(
             )
         }
 
+    private fun resolveBackupDirectory(): File =
+        backupDirectoryProvider().apply {
+            if (exists()) {
+                check(isDirectory) { BACKUP_FAILURE_MESSAGE }
+            } else {
+                check(mkdirs()) { BACKUP_FAILURE_MESSAGE }
+            }
+        }
+
     private fun Json.decodeImportBundle(jsonBytes: ByteArray): ExportBundleDto =
         runCatching {
             decodeFromString<ExportBundleDto>(jsonBytes.toString(Charsets.UTF_8))
@@ -224,6 +228,14 @@ class DefaultImportRepository internal constructor(
     private data class ImportMergeResult(
         val addedSessionCount: Int,
         val duplicateSessionCount: Int,
+    )
+
+    internal data class Dependencies(
+        val database: AppDatabase,
+        val profilePreferencesDataSource: ProfilePreferencesDataSource,
+        val ioDispatcher: CoroutineDispatcher,
+        val clock: Clock,
+        val json: Json,
     )
 
     private companion object {

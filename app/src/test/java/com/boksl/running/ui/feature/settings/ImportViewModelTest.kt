@@ -150,7 +150,7 @@ class ImportViewModelTest {
                             flowFactory = {
                                 flow {
                                     gate.await()
-                                    throw IllegalStateException("import failed")
+                                    error("import failed")
                                 }
                             },
                         ),

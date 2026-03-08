@@ -1,3 +1,5 @@
+@file:Suppress("LongMethod", "LongParameterList", "MagicNumber", "ReturnCount")
+
 package com.boksl.running.data.debug
 
 import androidx.room.withTransaction
@@ -20,16 +22,16 @@ import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.temporal.TemporalAdjusters
 import java.time.YearMonth
 import java.time.ZonedDateTime
+import java.time.temporal.TemporalAdjusters
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sin
-import javax.inject.Inject
-import javax.inject.Singleton
 
 interface DebugSeedManager {
     suspend fun regenerateLastYear(): DebugSeedOperationResult
@@ -102,7 +104,13 @@ class DebugRunSeedGenerator
                 resolveRunOffsets(weekIndex).forEachIndexed { runIndex, dayOffset ->
                     val runDate = weekStart.plusDays(dayOffset.toLong())
                     if (runDate < startDate || runDate > endDate) return@forEachIndexed
-                    runs += buildSeedRun(runDate = runDate, weekIndex = weekIndex, runIndex = runIndex, weightKg = weightKg)
+                    runs +=
+                        buildSeedRun(
+                            runDate = runDate,
+                            weekIndex = weekIndex,
+                            runIndex = runIndex,
+                            weightKg = weightKg,
+                        )
                 }
                 weekStart = weekStart.plusWeeks(1)
             }
@@ -144,12 +152,26 @@ class DebugRunSeedGenerator
             val averagePaceSecPerKm = calculateAveragePaceSecPerKm(distanceMeters, durationMillis)
             val averageSpeedMps = distanceMeters / (durationMillis / MILLIS_PER_SECOND.toDouble())
             val maxSpeedMps = averageSpeedMps * (1.08 + deterministicDouble("max-speed", runSeed, 0.0, 0.18))
-            val calorieKcal = estimateCaloriesKcal(weightKg = weightKg, averageSpeedMps = averageSpeedMps, durationMillis = durationMillis)
-            val sessionStart = resolveSessionStartDateTime(runDate = runDate, isWeekend = isWeekend, runSeed = runSeed)
+            val calorieKcal =
+                estimateCaloriesKcal(
+                    weightKg = weightKg,
+                    averageSpeedMps = averageSpeedMps,
+                    durationMillis = durationMillis,
+                )
+            val sessionStart =
+                resolveSessionStartDateTime(
+                    runDate = runDate,
+                    isWeekend = isWeekend,
+                    runSeed = runSeed,
+                )
             val startedAtEpochMillis = sessionStart.toInstant().toEpochMilli()
             val endedAtEpochMillis = startedAtEpochMillis + durationMillis
-            val sessionExternalId = "$SESSION_EXTERNAL_ID_PREFIX-${runDate}-$weekIndex-$runIndex"
-            val trackPointCount = (distanceMeters / 260.0).roundToInt().coerceIn(MIN_TRACK_POINT_COUNT, MAX_TRACK_POINT_COUNT)
+            val sessionExternalId = "$SESSION_EXTERNAL_ID_PREFIX-$runDate-$weekIndex-$runIndex"
+            val trackPointCount =
+                (distanceMeters / 260.0).roundToInt().coerceIn(
+                    MIN_TRACK_POINT_COUNT,
+                    MAX_TRACK_POINT_COUNT,
+                )
             val trackPoints =
                 buildTrackPoints(
                     sessionExternalId = sessionExternalId,
@@ -191,7 +213,12 @@ class DebugRunSeedGenerator
                     1, 2 -> 2 + (positiveSeed("light-week", weekIndex.toLong()) % 2L).toInt()
                     else -> 3 + (positiveSeed("normal-week", weekIndex.toLong()) % 3L).toInt()
                 }
-            val candidateOffsets = if (weekIndex % 2 == 0) EVEN_WEEK_RUN_OFFSETS else ODD_WEEK_RUN_OFFSETS
+            val candidateOffsets =
+                if (weekIndex % 2 == 0) {
+                    EVEN_WEEK_RUN_OFFSETS
+                } else {
+                    ODD_WEEK_RUN_OFFSETS
+                }
             return candidateOffsets.take(runCount)
         }
 
@@ -224,8 +251,10 @@ class DebugRunSeedGenerator
             startedAtEpochMillis: Long,
             durationMillis: Long,
         ): List<TrackPoint> {
-            val center = ROUTE_CENTERS[(positiveSeed("center", routeSeed) % ROUTE_CENTERS.size.toLong()).toInt()]
-            val baseTemplate = ROUTE_TEMPLATES[(positiveSeed("template", routeSeed) % ROUTE_TEMPLATES.size.toLong()).toInt()]
+            val centerIndex = (positiveSeed("center", routeSeed) % ROUTE_CENTERS.size.toLong()).toInt()
+            val templateIndex = (positiveSeed("template", routeSeed) % ROUTE_TEMPLATES.size.toLong()).toInt()
+            val center = ROUTE_CENTERS[centerIndex]
+            val baseTemplate = ROUTE_TEMPLATES[templateIndex]
             val loopCount = max(1, (targetDistanceMeters / baseTemplate.lengthMeters).roundToInt())
             val scale = targetDistanceMeters / (baseTemplate.lengthMeters * loopCount)
             val rotationRad = deterministicDouble("rotation", routeSeed, 0.0, PI * 2)
@@ -234,12 +263,23 @@ class DebugRunSeedGenerator
             val shiftY = deterministicDouble("shift-y", routeSeed, -120.0, 120.0)
             val transformedTemplate =
                 baseTemplate.points.map { point ->
-                    val scaled = if (mirror) MeterPoint(-point.xMeters * scale, point.yMeters * scale) else MeterPoint(point.xMeters * scale, point.yMeters * scale)
+                    val scaled =
+                        if (mirror) {
+                            MeterPoint(
+                                -point.xMeters * scale,
+                                point.yMeters * scale,
+                            )
+                        } else {
+                            MeterPoint(point.xMeters * scale, point.yMeters * scale)
+                        }
                     scaled.rotate(rotationRad).shiftedBy(shiftX, shiftY)
                 }
             val repeatedPolyline = transformedTemplate.repeat(loopCount)
             val sampledPoints = repeatedPolyline.sample(pointCount)
-            val sessionToken = sessionExternalId.removePrefix("$SESSION_EXTERNAL_ID_PREFIX-")
+            val sessionToken =
+                sessionExternalId.removePrefix(
+                    "$SESSION_EXTERNAL_ID_PREFIX-",
+                )
 
             return sampledPoints.mapIndexed { index, point ->
                 val progress =
@@ -253,11 +293,35 @@ class DebugRunSeedGenerator
                     sessionId = 0L,
                     sequence = index,
                     latitude = center.latitude + point.yMeters.toLatitudeDegrees(),
-                    longitude = center.longitude + point.xMeters.toLongitudeDegrees(center.latitude),
+                    longitude =
+                        center.longitude + point.xMeters.toLongitudeDegrees(center.latitude),
                     altitudeMeters = null,
-                    accuracyMeters = (3.0 + deterministicDouble("accuracy", routeSeed + index.toLong(), 0.0, 5.0)).toFloat(),
-                    speedMps = (averageSpeedMps * (0.92 + deterministicDouble("speed", routeSeed + index.toLong(), 0.0, 0.16))).toFloat(),
-                    recordedAtEpochMillis = startedAtEpochMillis + (durationMillis.toDouble() * progress).roundToInt().toLong(),
+                    accuracyMeters =
+                        (
+                            3.0 +
+                                deterministicDouble(
+                                    "accuracy",
+                                    routeSeed + index.toLong(),
+                                    0.0,
+                                    5.0,
+                                )
+                        ).toFloat(),
+                    speedMps =
+                        (
+                            averageSpeedMps *
+                                (
+                                    0.92 +
+                                        deterministicDouble(
+                                            "speed",
+                                            routeSeed + index.toLong(),
+                                            0.0,
+                                            0.16,
+                                        )
+                                )
+                        ).toFloat(),
+                    recordedAtEpochMillis =
+                        startedAtEpochMillis +
+                            (durationMillis.toDouble() * progress).roundToInt().toLong(),
                 )
             }
         }
@@ -304,7 +368,10 @@ private data class MeterPoint(
             yMeters = xMeters * sin(angleRadians) + yMeters * cos(angleRadians),
         )
 
-    fun shiftedBy(deltaXMeters: Double, deltaYMeters: Double): MeterPoint =
+    fun shiftedBy(
+        deltaXMeters: Double,
+        deltaYMeters: Double,
+    ): MeterPoint =
         MeterPoint(
             xMeters = xMeters + deltaXMeters,
             yMeters = yMeters + deltaYMeters,
@@ -313,7 +380,10 @@ private data class MeterPoint(
 
 private fun Profile?.resolveSeedWeightKg(): Float = this?.weightKg?.takeIf { it > 0f } ?: DEFAULT_WEIGHT_KG
 
-private fun positiveSeed(label: String, vararg values: Long): Long {
+private fun positiveSeed(
+    label: String,
+    vararg values: Long,
+): Long {
     var accumulator = label.hashCode().toLong()
     values.forEach { value ->
         accumulator = accumulator * 1_103_515_245L + value * 12_345L + 7_046_029_254_386_353_131L

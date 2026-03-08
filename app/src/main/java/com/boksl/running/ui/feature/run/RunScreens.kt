@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.boksl.running.ui.feature.run
 
 import androidx.compose.foundation.layout.Arrangement

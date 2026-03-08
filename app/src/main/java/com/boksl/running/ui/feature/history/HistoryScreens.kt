@@ -1,3 +1,5 @@
+@file:Suppress("LongMethod", "TooManyFunctions")
+
 package com.boksl.running.ui.feature.history
 
 import androidx.compose.foundation.clickable
@@ -37,14 +39,6 @@ import com.boksl.running.ui.formatDurationText
 import com.boksl.running.ui.formatPaceText
 import com.boksl.running.ui.formatSessionDateTimeText
 import com.boksl.running.ui.formatSpeedKmh
-
-data class HistoryScreenActions(
-    val onNavigateUp: () -> Unit,
-    val onOpenSession: (Long) -> Unit,
-    val onStartRun: () -> Unit,
-    val onDismissPermissionDialog: () -> Unit,
-    val onOpenAppSettings: () -> Unit,
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

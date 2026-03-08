@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.boksl.running.data.local.db.dao
 
 import androidx.paging.PagingSource

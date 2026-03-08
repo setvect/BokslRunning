@@ -121,7 +121,9 @@ private fun SettingsPendingAction.toBusyMessage(): String =
 private fun SettingsPendingAction.toSuccessMessage(result: DebugSeedOperationResult): String =
     when (this) {
         SettingsPendingAction.GENERATE ->
-            "테스트 데이터 ${result.generatedSessionCount}건과 트랙포인트 ${result.generatedTrackPointCount}건을 생성했습니다. 기존 시드 ${result.deletedSessionCount}건은 정리했습니다."
+            "테스트 데이터 ${result.generatedSessionCount}건과 " +
+                "트랙포인트 ${result.generatedTrackPointCount}건을 생성했습니다. " +
+                "기존 시드 ${result.deletedSessionCount}건은 정리했습니다."
         SettingsPendingAction.DELETE ->
             "생성한 테스트 데이터 ${result.deletedSessionCount}건을 삭제했습니다."
     }

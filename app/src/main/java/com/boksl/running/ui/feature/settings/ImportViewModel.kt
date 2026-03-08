@@ -47,12 +47,12 @@ class ImportViewModel
                         }
                     } catch (cancellationException: CancellationException) {
                         throw cancellationException
-                    } catch (throwable: Throwable) {
+                    } catch (exception: IllegalStateException) {
                         mutableUiState.update { uiState ->
                             uiState.copy(
                                 progress =
                                     ImportProgress.Error(
-                                        message = throwable.message ?: IMPORT_FAILURE_MESSAGE,
+                                        message = exception.message ?: IMPORT_FAILURE_MESSAGE,
                                     ),
                             )
                         }

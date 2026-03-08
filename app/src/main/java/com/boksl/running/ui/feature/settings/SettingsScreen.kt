@@ -22,23 +22,14 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun settingsScreen(
     uiState: SettingsUiState,
-    onNavigateUp: () -> Unit,
-    onEditProfile: () -> Unit,
-    onOpenExport: () -> Unit,
-    onOpenImport: () -> Unit,
-    onNavigateHome: () -> Unit,
-    onGenerateSeedDataClick: () -> Unit,
-    onDeleteSeedDataClick: () -> Unit,
-    onConfirmPendingAction: () -> Unit,
-    onDismissPendingAction: () -> Unit,
-    onClearStatusMessage: () -> Unit,
+    actions: SettingsScreenActions,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = "설정") },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateUp) {
+                    TextButton(onClick = actions.onNavigateUp) {
                         Text(text = "뒤로")
                     }
                 },
@@ -53,32 +44,11 @@ fun settingsScreen(
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Button(onClick = onEditProfile, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "프로필 정보 수정")
-            }
-            Button(
-                onClick = onOpenExport,
-                enabled = !uiState.isBusy,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = "전체 내보내기")
-            }
-            Button(
-                onClick = onOpenImport,
-                enabled = !uiState.isBusy,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = "가져오기")
-            }
-            Button(onClick = onNavigateHome, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "홈")
-            }
+            settingsPrimaryActions(uiState = uiState, actions = actions)
             if (uiState.isDebugToolsVisible) {
                 debugToolsSection(
                     uiState = uiState,
-                    onGenerateSeedDataClick = onGenerateSeedDataClick,
-                    onDeleteSeedDataClick = onDeleteSeedDataClick,
-                    onClearStatusMessage = onClearStatusMessage,
+                    actions = actions,
                 )
             }
         }
@@ -87,18 +57,43 @@ fun settingsScreen(
     uiState.pendingAction?.let { pendingAction ->
         debugActionConfirmationDialog(
             pendingAction = pendingAction,
-            onConfirm = onConfirmPendingAction,
-            onDismiss = onDismissPendingAction,
+            onConfirm = actions.onConfirmPendingAction,
+            onDismiss = actions.onDismissPendingAction,
         )
+    }
+}
+
+@Composable
+private fun settingsPrimaryActions(
+    uiState: SettingsUiState,
+    actions: SettingsScreenActions,
+) {
+    Button(onClick = actions.onEditProfile, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "프로필 정보 수정")
+    }
+    Button(
+        onClick = actions.onOpenExport,
+        enabled = !uiState.isBusy,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(text = "전체 내보내기")
+    }
+    Button(
+        onClick = actions.onOpenImport,
+        enabled = !uiState.isBusy,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(text = "가져오기")
+    }
+    Button(onClick = actions.onNavigateHome, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "홈")
     }
 }
 
 @Composable
 private fun debugToolsSection(
     uiState: SettingsUiState,
-    onGenerateSeedDataClick: () -> Unit,
-    onDeleteSeedDataClick: () -> Unit,
-    onClearStatusMessage: () -> Unit,
+    actions: SettingsScreenActions,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -114,14 +109,14 @@ private fun debugToolsSection(
                 style = MaterialTheme.typography.bodyMedium,
             )
             Button(
-                onClick = onGenerateSeedDataClick,
+                onClick = actions.onGenerateSeedDataClick,
                 enabled = !uiState.isBusy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(text = "최근 12개월 테스트 데이터 생성")
             }
             Button(
-                onClick = onDeleteSeedDataClick,
+                onClick = actions.onDeleteSeedDataClick,
                 enabled = !uiState.isBusy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -135,26 +130,39 @@ private fun debugToolsSection(
                 )
             }
             uiState.statusMessage?.let { statusMessage ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = statusMessage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color =
-                                when (uiState.statusKind) {
-                                    SettingsStatusKind.SUCCESS -> MaterialTheme.colorScheme.primary
-                                    SettingsStatusKind.ERROR -> MaterialTheme.colorScheme.error
-                                    SettingsStatusKind.IDLE -> MaterialTheme.colorScheme.onSurface
-                                },
-                        )
-                        TextButton(onClick = onClearStatusMessage, modifier = Modifier.fillMaxWidth()) {
-                            Text(text = "메시지 닫기")
-                        }
-                    }
-                }
+                settingsStatusCard(
+                    message = statusMessage,
+                    statusKind = uiState.statusKind,
+                    onClearStatusMessage = actions.onClearStatusMessage,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun settingsStatusCard(
+    message: String,
+    statusKind: SettingsStatusKind,
+    onClearStatusMessage: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color =
+                    when (statusKind) {
+                        SettingsStatusKind.SUCCESS -> MaterialTheme.colorScheme.primary
+                        SettingsStatusKind.ERROR -> MaterialTheme.colorScheme.error
+                        SettingsStatusKind.IDLE -> MaterialTheme.colorScheme.onSurface
+                    },
+            )
+            TextButton(onClick = onClearStatusMessage, modifier = Modifier.fillMaxWidth()) {
+                Text(text = "메시지 닫기")
             }
         }
     }

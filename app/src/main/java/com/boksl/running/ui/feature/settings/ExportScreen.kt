@@ -22,19 +22,14 @@ import com.boksl.running.domain.model.ExportProgress
 @Composable
 fun exportScreen(
     uiState: ExportUiState,
-    onNavigateUp: () -> Unit,
-    onStartExport: () -> Unit,
-    onCancelExport: () -> Unit,
-    onShareExport: () -> Unit,
-    onSaveToDevice: () -> Unit,
-    onNavigateHome: () -> Unit,
+    actions: ExportScreenActions,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = "전체 내보내기") },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateUp) {
+                    TextButton(onClick = actions.onNavigateUp) {
                         Text(text = "뒤로")
                     }
                 },
@@ -49,92 +44,106 @@ fun exportScreen(
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            when (val progress = uiState.progress) {
-                ExportProgress.Idle -> {
-                    exportInfoCard()
-                    Button(onClick = onStartExport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "내보내기 시작")
-                    }
-                }
+            exportProgressContent(progress = uiState.progress, actions = actions)
+        }
+    }
+}
 
-                is ExportProgress.Running -> {
-                    exportInfoCard()
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = "${progress.totalSessions}개 중 ${progress.completedSessions}개 생성 중…",
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                text = "모든 러닝 기록, 프로필, 앱 설정을 JSON 파일로 만들고 있습니다.",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
-                    Button(onClick = onCancelExport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "취소")
-                    }
-                }
+@Composable
+private fun exportProgressContent(
+    progress: ExportProgress,
+    actions: ExportScreenActions,
+) {
+    when (progress) {
+        ExportProgress.Idle -> exportIdleContent(actions = actions)
+        is ExportProgress.Running -> exportRunningContent(progress = progress, actions = actions)
+        is ExportProgress.Completed -> exportCompletedContent(actions = actions)
+        is ExportProgress.Error -> exportErrorContent(progress = progress, actions = actions)
+    }
+}
 
-                is ExportProgress.Completed -> {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = "내보내기 완료",
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                text = "JSON 파일이 준비되었습니다. 공유 시트에서 파일 앱, 드라이브 등으로 저장할 수 있습니다.",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
-                    Button(onClick = onShareExport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "파일 공유/저장")
-                    }
-                    Button(onClick = onSaveToDevice, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "디바이스에 저장")
-                    }
-                    Button(onClick = onNavigateHome, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "홈")
-                    }
-                    TextButton(onClick = onStartExport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "다시 내보내기")
-                    }
-                }
+@Composable
+private fun exportIdleContent(actions: ExportScreenActions) {
+    exportInfoCard()
+    Button(onClick = actions.onStartExport, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "내보내기 시작")
+    }
+}
 
-                is ExportProgress.Error -> {
-                    exportInfoCard()
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = "내보내기 실패",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            Text(
-                                text = progress.message,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
-                    Button(onClick = onStartExport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "다시 시도")
-                    }
-                    TextButton(onClick = onNavigateUp, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "뒤로")
-                    }
-                }
-            }
+@Composable
+private fun exportRunningContent(
+    progress: ExportProgress.Running,
+    actions: ExportScreenActions,
+) {
+    exportInfoCard()
+    exportStatusCard(
+        title = "${progress.totalSessions}개 중 ${progress.completedSessions}개 생성 중…",
+        message = "모든 러닝 기록, 프로필, 앱 설정을 JSON 파일로 만들고 있습니다.",
+    )
+    Button(onClick = actions.onCancelExport, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "취소")
+    }
+}
+
+@Composable
+private fun exportCompletedContent(actions: ExportScreenActions) {
+    exportStatusCard(
+        title = "내보내기 완료",
+        message = "JSON 파일이 준비되었습니다. 공유 시트에서 파일 앱, 드라이브 등으로 저장할 수 있습니다.",
+    )
+    Button(onClick = actions.onShareExport, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "파일 공유/저장")
+    }
+    Button(onClick = actions.onSaveToDevice, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "디바이스에 저장")
+    }
+    Button(onClick = actions.onNavigateHome, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "홈")
+    }
+    TextButton(onClick = actions.onStartExport, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "다시 내보내기")
+    }
+}
+
+@Composable
+private fun exportErrorContent(
+    progress: ExportProgress.Error,
+    actions: ExportScreenActions,
+) {
+    exportInfoCard()
+    exportStatusCard(
+        title = "내보내기 실패",
+        message = progress.message,
+        titleColor = MaterialTheme.colorScheme.error,
+    )
+    Button(onClick = actions.onStartExport, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "다시 시도")
+    }
+    TextButton(onClick = actions.onNavigateUp, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "뒤로")
+    }
+}
+
+@Composable
+private fun exportStatusCard(
+    title: String,
+    message: String,
+    titleColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = titleColor,
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }

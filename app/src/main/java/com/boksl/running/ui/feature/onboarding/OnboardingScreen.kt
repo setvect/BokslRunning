@@ -13,16 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-data class OnboardingUiState(
-    val title: String = "러닝 경로/시간/페이스를 기록합니다",
-    val buttonLabel: String = "시작하기",
-)
-
 @Composable
 fun onboardingScreen(
     onStartClick: () -> Unit,
     modifier: Modifier = Modifier,
-    uiState: OnboardingUiState = OnboardingUiState(),
+    uiState: OnboardingScreenState = OnboardingScreenState(),
 ) {
     Scaffold(modifier = modifier) { innerPadding ->
         Column(

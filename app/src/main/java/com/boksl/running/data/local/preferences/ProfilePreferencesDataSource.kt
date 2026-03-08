@@ -12,8 +12,8 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.boksl.running.domain.model.AppPreferences
 import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.Profile
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -92,8 +92,7 @@ class ProfilePreferencesDataSource
             }
         }
 
-        suspend fun getImportedFileHashes(): Set<String> =
-            dataStore.data.first()[Keys.importedFileHashes] ?: emptySet()
+        suspend fun getImportedFileHashes(): Set<String> = dataStore.data.first()[Keys.importedFileHashes] ?: emptySet()
 
         suspend fun addImportedFileHash(hash: String) {
             dataStore.edit { preferences ->

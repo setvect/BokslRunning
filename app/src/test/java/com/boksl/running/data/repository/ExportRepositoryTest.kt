@@ -81,8 +81,7 @@ class ExportRepositoryTest {
         exportRepository =
             DefaultExportRepository(
                 context = context,
-                runningSessionDao = database.runningSessionDao(),
-                trackPointDao = database.trackPointDao(),
+                database = database,
                 profilePreferencesDataSource = profilePreferencesDataSource,
                 ioDispatcher = Dispatchers.IO,
                 clock = FIXED_CLOCK,

@@ -1,7 +1,6 @@
 package com.boksl.running.data.repository
 
 import android.content.Context
-import android.content.res.Resources
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
@@ -84,15 +83,15 @@ class ImportRepositoryTest {
         backupRootDirectory = File(context.cacheDir, "import-backup-tests").apply { deleteRecursively() }
         importRepository =
             DefaultImportRepository(
-                context = context,
                 contentResolver = context.contentResolver,
-                database = database,
-                runningSessionDao = database.runningSessionDao(),
-                trackPointDao = database.trackPointDao(),
-                profilePreferencesDataSource = profilePreferencesDataSource,
-                ioDispatcher = Dispatchers.IO,
-                clock = FIXED_CLOCK,
-                json = json,
+                dependencies =
+                    DefaultImportRepository.Dependencies(
+                        database = database,
+                        profilePreferencesDataSource = profilePreferencesDataSource,
+                        ioDispatcher = Dispatchers.IO,
+                        clock = FIXED_CLOCK,
+                        json = json,
+                    ),
                 backupDirectoryProvider = { backupRootDirectory },
             )
     }
@@ -214,19 +213,22 @@ class ImportRepositoryTest {
             val blockingFile = File.createTempFile("backup-root", ".tmp")
             val failingRepository =
                 DefaultImportRepository(
-                    context = context,
                     contentResolver = context.contentResolver,
-                    database = database,
-                    runningSessionDao = database.runningSessionDao(),
-                    trackPointDao = database.trackPointDao(),
-                    profilePreferencesDataSource = profilePreferencesDataSource,
-                    ioDispatcher = Dispatchers.IO,
-                    clock = FIXED_CLOCK,
-                    json = json,
+                    dependencies =
+                        DefaultImportRepository.Dependencies(
+                            database = database,
+                            profilePreferencesDataSource = profilePreferencesDataSource,
+                            ioDispatcher = Dispatchers.IO,
+                            clock = FIXED_CLOCK,
+                            json = json,
+                        ),
                     backupDirectoryProvider = { blockingFile },
                 )
 
-            val progress = failingRepository.importAllData(buildImportBundle(sessionExternalId = "new-session")).toList().last()
+            val progress =
+                failingRepository.importAllData(
+                    buildImportBundle(sessionExternalId = "new-session"),
+                ).toList().last()
 
             assertTrue(progress is ImportProgress.Error)
             assertEquals("내부 백업 생성에 실패했습니다.", (progress as ImportProgress.Error).message)
@@ -253,7 +255,10 @@ class ImportRepositoryTest {
                 ),
             )
 
-            val completed = importRepository.importAllData(buildImportBundle(sessionExternalId = "new-session")).toList().last()
+            val completed =
+                importRepository.importAllData(
+                    buildImportBundle(sessionExternalId = "new-session"),
+                ).toList().last()
             val profile = profilePreferencesDataSource.observeProfile().first()
             val preferences = profilePreferencesDataSource.observeAppPreferences().first()
 

@@ -5,7 +5,6 @@ import com.boksl.running.MainDispatcherRule
 import com.boksl.running.domain.model.HomeSummary
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.RunningSession
-import com.boksl.running.domain.model.SessionStatus
 import com.boksl.running.domain.model.StatsChartMetric
 import com.boksl.running.domain.model.TrackPoint
 import com.boksl.running.domain.repository.RunningRepository

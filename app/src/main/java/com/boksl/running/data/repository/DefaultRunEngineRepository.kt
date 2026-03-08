@@ -37,6 +37,7 @@ import javax.inject.Singleton
 import kotlin.math.max
 
 @Singleton
+@Suppress("TooManyFunctions")
 class DefaultRunEngineRepository
     @Inject
     constructor(
@@ -245,7 +246,7 @@ class DefaultRunEngineRepository
                             lastFlushAtEpochMillis = activeSession.updatedAtEpochMillis,
                             pointCount = pointCount,
                             lastLocationSample = lastSample,
-                            recentSamples = trackPoints.takeLast(10).map { it.toLocationSample() },
+                            recentSamples = trackPoints.takeLast(RECENT_SAMPLE_LIMIT).map { it.toLocationSample() },
                             pendingTrackPoints = emptyList(),
                             externalId = activeSession.externalId,
                             createdAtEpochMillis = activeSession.createdAtEpochMillis,
@@ -259,6 +260,7 @@ class DefaultRunEngineRepository
             return recoveryJob as Job
         }
 
+        @Suppress("ReturnCount")
         private suspend fun appendLocationSampleLocked(sample: LocationSample) {
             val currentState = activeRunState.value ?: return
             val sessionId = currentState.sessionId ?: return
@@ -278,29 +280,18 @@ class DefaultRunEngineRepository
                 }
             val currentPace = calculateCurrentPaceSecPerKm(recentSamples, CURRENT_PACE_WINDOW_MILLIS)
             val averagePace = calculateAveragePaceSecPerKm(totalDistance, durationMillis)
-            val averageSpeed = if (durationMillis > 0L) totalDistance / (durationMillis / 1_000.0) else 0.0
+            val averageSpeed = calculateAverageSpeed(totalDistance = totalDistance, durationMillis = durationMillis)
             val calorie = resolveCalories(averageSpeedMps = averageSpeed, durationMillis = durationMillis)
             val pointCount = currentState.pointCount + 1
             val candidateMaxSpeed = resolveMaxSpeedMps(previous, sample)
             val maxSpeed =
-                if (pointCount <= 2) {
+                if (pointCount <= INITIAL_MAX_SPEED_SAMPLE_COUNT) {
                     currentState.maxSpeedMps
                 } else {
                     max(currentState.maxSpeedMps, candidateMaxSpeed)
                 }
 
-            val trackPoint =
-                TrackPoint(
-                    externalId = UUID.randomUUID().toString(),
-                    sessionId = sessionId,
-                    sequence = pointCount - 1,
-                    latitude = sample.latitude,
-                    longitude = sample.longitude,
-                    altitudeMeters = sample.altitudeMeters,
-                    accuracyMeters = sample.accuracyMeters,
-                    speedMps = sample.speedMps,
-                    recordedAtEpochMillis = sample.recordedAtEpochMillis,
-                )
+            val trackPoint = sample.toTrackPoint(sessionId = sessionId, pointCount = pointCount)
 
             activeRunState.value =
                 currentState.copy(
@@ -317,6 +308,32 @@ class DefaultRunEngineRepository
                     pendingTrackPoints = currentState.pendingTrackPoints + trackPoint,
                 )
         }
+
+        private fun calculateAverageSpeed(
+            totalDistance: Double,
+            durationMillis: Long,
+        ): Double =
+            if (durationMillis > 0L) {
+                totalDistance / (durationMillis / MILLIS_PER_SECOND)
+            } else {
+                0.0
+            }
+
+        private fun LocationSample.toTrackPoint(
+            sessionId: Long,
+            pointCount: Int,
+        ): TrackPoint =
+            TrackPoint(
+                externalId = UUID.randomUUID().toString(),
+                sessionId = sessionId,
+                sequence = pointCount - 1,
+                latitude = latitude,
+                longitude = longitude,
+                altitudeMeters = altitudeMeters,
+                accuracyMeters = accuracyMeters,
+                speedMps = speedMps,
+                recordedAtEpochMillis = recordedAtEpochMillis,
+            )
 
         private fun ensureTicker() {
             if (tickerJob?.isActive == true) return
@@ -338,7 +355,7 @@ class DefaultRunEngineRepository
                                         calculateAveragePaceSecPerKm(currentState.totalDistanceMeters, durationMillis)
                                     val averageSpeed =
                                         if (durationMillis > 0L) {
-                                            currentState.totalDistanceMeters / (durationMillis / 1_000.0)
+                                            currentState.totalDistanceMeters / (durationMillis / MILLIS_PER_SECOND)
                                         } else {
                                             0.0
                                         }
@@ -420,6 +437,9 @@ class DefaultRunEngineRepository
             const val FLUSH_INTERVAL_MILLIS = 5_000L
             const val TICKER_INTERVAL_MILLIS = 1_000L
             const val CURRENT_PACE_WINDOW_MILLIS = 10_000L
+            const val MILLIS_PER_SECOND = 1_000.0
+            const val RECENT_SAMPLE_LIMIT = 10
+            const val INITIAL_MAX_SPEED_SAMPLE_COUNT = 2
         }
     }
 

@@ -136,7 +136,7 @@ class ExportViewModelTest {
                             flowFactory = {
                                 flow {
                                     gate.await()
-                                    throw IllegalStateException("export failed")
+                                    error("export failed")
                                 }
                             },
                         ),

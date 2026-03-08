@@ -3,6 +3,7 @@ package com.boksl.running.ui.feature.run
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.boksl.running.core.network.NetworkMonitor
+import com.boksl.running.domain.model.LocationSample
 import com.boksl.running.domain.model.RunEngineState
 import com.boksl.running.domain.model.RunSnapshot
 import com.boksl.running.domain.model.RunningSession
@@ -75,7 +76,7 @@ class RunSessionViewModel
                 )
             }.stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000L),
+                started = SharingStarted.WhileSubscribed(STATE_SUBSCRIPTION_TIMEOUT_MILLIS),
                 initialValue = RunSessionUiState(),
             )
 
@@ -146,27 +147,30 @@ private fun appendLatestLocation(
     trackPoints: List<TrackPoint>,
     snapshot: RunSnapshot?,
 ): List<TrackPoint> {
-    val latest = snapshot?.latestLocation ?: return trackPoints
-    val lastPoint = trackPoints.lastOrNull()
-    if (
-        lastPoint != null &&
-        lastPoint.latitude == latest.latitude &&
-        lastPoint.longitude == latest.longitude &&
-        lastPoint.recordedAtEpochMillis == latest.recordedAtEpochMillis
-    ) {
-        return trackPoints
+    val latest = snapshot?.latestLocation
+    val sessionId = snapshot?.sessionId
+    return if (latest == null || sessionId == null || trackPoints.lastOrNull().isSameLocationAs(latest)) {
+        trackPoints
+    } else {
+        trackPoints +
+            TrackPoint(
+                externalId = "latest-preview",
+                sessionId = sessionId,
+                sequence = trackPoints.size,
+                latitude = latest.latitude,
+                longitude = latest.longitude,
+                altitudeMeters = latest.altitudeMeters,
+                accuracyMeters = latest.accuracyMeters,
+                speedMps = latest.speedMps,
+                recordedAtEpochMillis = latest.recordedAtEpochMillis,
+            )
     }
-    val sessionId = snapshot.sessionId ?: return trackPoints
-    return trackPoints +
-        TrackPoint(
-            externalId = "latest-preview",
-            sessionId = sessionId,
-            sequence = trackPoints.size,
-            latitude = latest.latitude,
-            longitude = latest.longitude,
-            altitudeMeters = latest.altitudeMeters,
-            accuracyMeters = latest.accuracyMeters,
-            speedMps = latest.speedMps,
-            recordedAtEpochMillis = latest.recordedAtEpochMillis,
-        )
 }
+
+private fun TrackPoint?.isSameLocationAs(latest: LocationSample): Boolean =
+    this != null &&
+        latitude == latest.latitude &&
+        longitude == latest.longitude &&
+        recordedAtEpochMillis == latest.recordedAtEpochMillis
+
+private const val STATE_SUBSCRIPTION_TIMEOUT_MILLIS = 5_000L

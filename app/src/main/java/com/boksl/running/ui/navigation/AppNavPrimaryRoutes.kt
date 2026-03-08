@@ -5,7 +5,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,8 +19,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.boksl.running.domain.model.RunEngineState
 import com.boksl.running.ui.feature.home.HomeEvent
+import com.boksl.running.ui.feature.home.HomeScreenActions
 import com.boksl.running.ui.feature.home.HomeViewModel
 import com.boksl.running.ui.feature.home.homeScreen
+import com.boksl.running.ui.feature.onboarding.ProfileFormActions
 import com.boksl.running.ui.feature.onboarding.ProfileFormNavigationEvent
 import com.boksl.running.ui.feature.onboarding.ProfileFormViewModel
 import com.boksl.running.ui.feature.onboarding.ProfileSetupEntryPoint
@@ -39,8 +40,8 @@ import com.boksl.running.ui.feature.run.RunRecoveryEvent
 import com.boksl.running.ui.feature.run.RunRecoveryViewModel
 import com.boksl.running.ui.feature.run.RunSessionViewModel
 import com.boksl.running.ui.feature.run.runLiveScreen
-import com.boksl.running.ui.feature.run.runRecoveryScreen
 import com.boksl.running.ui.feature.run.runReadyScreen
+import com.boksl.running.ui.feature.run.runRecoveryScreen
 import com.boksl.running.ui.feature.run.runSummaryScreen
 
 internal fun NavGraphBuilder.addLaunchRoute(navController: NavHostController) {
@@ -105,10 +106,13 @@ internal fun NavGraphBuilder.addProfileSetupRoute(navController: NavHostControll
 
         profileFormScreen(
             uiState = uiState,
-            onWeightChanged = viewModel::onWeightChanged,
-            onGenderChanged = viewModel::onGenderChanged,
-            onAgeChanged = viewModel::onAgeChanged,
-            onSaveClick = viewModel::saveProfile,
+            actions =
+                ProfileFormActions(
+                    onWeightChanged = viewModel::onWeightChanged,
+                    onGenderChanged = viewModel::onGenderChanged,
+                    onAgeChanged = viewModel::onAgeChanged,
+                    onSaveClick = viewModel::saveProfile,
+                ),
             onNavigateUp =
                 if (uiState.entryPoint == ProfileSetupEntryPoint.Settings) {
                     { navController.navigateUp() }
@@ -188,23 +192,26 @@ internal fun NavGraphBuilder.addHomeRoute(navController: NavHostController) {
 
         homeScreen(
             uiState = uiState,
-            onStartRun = {
-                if (hasLocationPermission(context)) {
-                    navController.navigate(AppRoute.RunReady.route)
-                } else {
-                    viewModel.onRunStartRequested(
-                        shouldShowRationale = activity?.let(::shouldShowLocationPermissionRationale) ?: false,
-                    )
-                }
-            },
-            onOpenHistory = { navController.navigate(AppRoute.History.route) },
-            onOpenStats = { navController.navigate(AppRoute.Stats.route) },
-            onOpenSettings = { navController.navigate(AppRoute.Settings.route) },
-            onDismissPermissionDialog = viewModel::dismissPermissionDialog,
-            onOpenAppSettings = {
-                viewModel.onOpenAppSettingsRequested()
-                openAppSettings(context)
-            },
+            actions =
+                HomeScreenActions(
+                    onStartRun = {
+                        if (hasLocationPermission(context)) {
+                            navController.navigate(AppRoute.RunReady.route)
+                        } else {
+                            viewModel.onRunStartRequested(
+                                shouldShowRationale = activity?.let(::shouldShowLocationPermissionRationale) ?: false,
+                            )
+                        }
+                    },
+                    onOpenHistory = { navController.navigate(AppRoute.History.route) },
+                    onOpenStats = { navController.navigate(AppRoute.Stats.route) },
+                    onOpenSettings = { navController.navigate(AppRoute.Settings.route) },
+                    onDismissPermissionDialog = viewModel::dismissPermissionDialog,
+                    onOpenAppSettings = {
+                        viewModel.onOpenAppSettingsRequested()
+                        openAppSettings(context)
+                    },
+                ),
         )
     }
 }

@@ -27,9 +27,12 @@ import com.boksl.running.ui.feature.permission.hasLocationPermission
 import com.boksl.running.ui.feature.permission.openAppSettings
 import com.boksl.running.ui.feature.permission.shouldShowLocationPermissionRationale
 import com.boksl.running.ui.feature.settings.ExportEvent
+import com.boksl.running.ui.feature.settings.ExportScreenActions
 import com.boksl.running.ui.feature.settings.ExportViewModel
 import com.boksl.running.ui.feature.settings.ImportEvent
+import com.boksl.running.ui.feature.settings.ImportScreenActions
 import com.boksl.running.ui.feature.settings.ImportViewModel
+import com.boksl.running.ui.feature.settings.SettingsScreenActions
 import com.boksl.running.ui.feature.settings.SettingsViewModel
 import com.boksl.running.ui.feature.settings.buildExportShareIntent
 import com.boksl.running.ui.feature.settings.exportScreen
@@ -133,20 +136,23 @@ internal fun NavGraphBuilder.addSettingsRoute(navController: NavHostController) 
 
         settingsScreen(
             uiState = uiState,
-            onNavigateUp = { navController.navigateUp() },
-            onEditProfile = {
-                navController.navigate(
-                    AppRoute.ProfileSetup.createRoute(ProfileSetupEntryPoint.Settings.routeValue),
-                )
-            },
-            onOpenExport = { navController.navigate(AppRoute.Export.route) },
-            onOpenImport = { navController.navigate(AppRoute.Import.route) },
-            onNavigateHome = { navController.navigateHomeSingleTop() },
-            onGenerateSeedDataClick = viewModel::onGenerateSeedDataClick,
-            onDeleteSeedDataClick = viewModel::onDeleteSeedDataClick,
-            onConfirmPendingAction = viewModel::confirmPendingAction,
-            onDismissPendingAction = viewModel::dismissPendingAction,
-            onClearStatusMessage = viewModel::clearStatusMessage,
+            actions =
+                SettingsScreenActions(
+                    onNavigateUp = { navController.navigateUp() },
+                    onEditProfile = {
+                        navController.navigate(
+                            AppRoute.ProfileSetup.createRoute(ProfileSetupEntryPoint.Settings.routeValue),
+                        )
+                    },
+                    onOpenExport = { navController.navigate(AppRoute.Export.route) },
+                    onOpenImport = { navController.navigate(AppRoute.Import.route) },
+                    onNavigateHome = { navController.navigateHomeSingleTop() },
+                    onGenerateSeedDataClick = viewModel::onGenerateSeedDataClick,
+                    onDeleteSeedDataClick = viewModel::onDeleteSeedDataClick,
+                    onConfirmPendingAction = viewModel::confirmPendingAction,
+                    onDismissPendingAction = viewModel::dismissPendingAction,
+                    onClearStatusMessage = viewModel::clearStatusMessage,
+                ),
         )
     }
 }
@@ -193,12 +199,15 @@ internal fun NavGraphBuilder.addExportRoute(navController: NavHostController) {
 
         exportScreen(
             uiState = uiState,
-            onNavigateUp = { navController.navigateUp() },
-            onStartExport = viewModel::startExport,
-            onCancelExport = viewModel::cancelExport,
-            onShareExport = viewModel::shareExportFile,
-            onSaveToDevice = viewModel::saveExportFileToDevice,
-            onNavigateHome = { navController.navigateHomeSingleTop() },
+            actions =
+                ExportScreenActions(
+                    onNavigateUp = { navController.navigateUp() },
+                    onStartExport = viewModel::startExport,
+                    onCancelExport = viewModel::cancelExport,
+                    onShareExport = viewModel::shareExportFile,
+                    onSaveToDevice = viewModel::saveExportFileToDevice,
+                    onNavigateHome = { navController.navigateHomeSingleTop() },
+                ),
         )
     }
 }
@@ -222,11 +231,14 @@ internal fun NavGraphBuilder.addImportRoute(navController: NavHostController) {
 
         importScreen(
             uiState = uiState,
-            onNavigateUp = { navController.navigateUp() },
-            onStartImport = viewModel::startImport,
-            onCancelImport = viewModel::cancelImport,
-            onConfirm = { navController.navigateUp() },
-            onNavigateHome = { navController.navigateHomeSingleTop() },
+            actions =
+                ImportScreenActions(
+                    onNavigateUp = { navController.navigateUp() },
+                    onStartImport = viewModel::startImport,
+                    onCancelImport = viewModel::cancelImport,
+                    onConfirm = { navController.navigateUp() },
+                    onNavigateHome = { navController.navigateHomeSingleTop() },
+                ),
         )
     }
 }

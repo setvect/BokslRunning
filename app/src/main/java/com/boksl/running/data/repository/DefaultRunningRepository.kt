@@ -205,7 +205,7 @@ private fun HomeSummaryProjection?.toHomeSummary(): HomeSummary {
     val totalCaloriesKcal = this?.totalCaloriesKcal ?: 0.0
     val averageSpeedMps =
         if (totalDurationMillis > 0L) {
-            totalDistanceMeters / (totalDurationMillis / 1_000.0)
+            totalDistanceMeters / (totalDurationMillis / MILLIS_PER_SECOND)
         } else {
             0.0
         }
@@ -218,9 +218,7 @@ private fun HomeSummaryProjection?.toHomeSummary(): HomeSummary {
     )
 }
 
-private fun List<MonthlyStatsProjection>.toMonthlyStats(
-    currentMonth: YearMonth,
-): List<MonthlyStatsPoint> {
+private fun List<MonthlyStatsProjection>.toMonthlyStats(currentMonth: YearMonth): List<MonthlyStatsPoint> {
     val minimumStartMonth = currentMonth.minusMonths(MINIMUM_MONTH_COUNT.toLong() - 1L)
     val firstMonth = minOfOrNull { projection -> YearMonth.parse(projection.yearMonth) } ?: minimumStartMonth
     val startMonth = minOf(firstMonth, minimumStartMonth)
@@ -245,16 +243,19 @@ private fun List<MonthlyStatsProjection>.toMonthlyStats(
 }
 
 private fun YearMonth.monthsUntilInclusive(other: YearMonth): Int =
-    ((other.year - year) * 12 + other.monthValue - monthValue) + 1
+    ((other.year - year) * MONTHS_PER_YEAR + other.monthValue - monthValue) + INCLUSIVE_MONTH_OFFSET
 
 private const val MINIMUM_MONTH_COUNT = 6
+private const val MILLIS_PER_SECOND = 1_000.0
+private const val MONTHS_PER_YEAR = 12
+private const val INCLUSIVE_MONTH_OFFSET = 1
 
 private fun MonthlyStatsProjection.toMonthlyStatsPoint(yearMonth: YearMonth): MonthlyStatsPoint {
     val totalDistanceMeters = totalDistanceMeters ?: 0.0
     val totalDurationMillis = totalDurationMillis ?: 0L
     val averageSpeedMps =
         if (totalDurationMillis > 0L) {
-            totalDistanceMeters / (totalDurationMillis / 1_000.0)
+            totalDistanceMeters / (totalDurationMillis / MILLIS_PER_SECOND)
         } else {
             0.0
         }

@@ -1,3 +1,5 @@
+@file:Suppress("LongMethod")
+
 package com.boksl.running.data.repository
 
 import android.content.Context

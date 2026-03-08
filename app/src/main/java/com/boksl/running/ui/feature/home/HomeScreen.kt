@@ -26,74 +26,94 @@ import com.boksl.running.ui.formatSpeedKmh
 @Composable
 fun homeScreen(
     uiState: HomeUiState,
-    onStartRun: () -> Unit,
-    onOpenHistory: () -> Unit,
-    onOpenStats: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onDismissPermissionDialog: () -> Unit,
-    onOpenAppSettings: () -> Unit,
+    actions: HomeScreenActions,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = "홈") },
                 actions = {
-                    TextButton(onClick = onOpenSettings) {
+                    TextButton(onClick = actions.onOpenSettings) {
                         Text(text = "설정")
                     }
                 },
             )
         },
     ) { innerPadding ->
-        Column(
+        homeContent(
+            uiState = uiState,
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
                     .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = "누적 요약",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    summaryRow(label = "총 달린 거리", value = "${uiState.totalDistanceMeters.formatDistanceKm()} km")
-                    summaryRow(label = "달린 시간", value = uiState.totalDurationMillis.formatDurationText())
-                    summaryRow(label = "평균 속도", value = "${uiState.averageSpeedMps.formatSpeedKmh()} km/h")
-                    summaryRow(
-                        label = "소모 칼로리",
-                        value =
-                            if (uiState.hasProfile) {
-                                "${uiState.totalCaloriesKcal.formatCaloriesValue()} kcal"
-                            } else {
-                                "프로필 입력 시 계산 가능"
-                            },
-                    )
-                }
-            }
-            Button(onClick = onStartRun, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "러닝 시작")
-            }
-            Button(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "기록")
-            }
-            Button(onClick = onOpenStats, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "통계")
-            }
-        }
+            actions = actions,
+        )
     }
 
     uiState.permissionDialogState?.let { dialogState ->
         locationPermissionDialog(
             uiState = dialogState,
-            onDismiss = onDismissPermissionDialog,
-            onOpenAppSettings = onOpenAppSettings,
+            onDismiss = actions.onDismissPermissionDialog,
+            onOpenAppSettings = actions.onOpenAppSettings,
         )
+    }
+}
+
+@Composable
+private fun homeContent(
+    uiState: HomeUiState,
+    modifier: Modifier,
+    actions: HomeScreenActions,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        homeSummaryCard(uiState = uiState)
+        homeNavigationButtons(actions = actions)
+    }
+}
+
+@Composable
+private fun homeSummaryCard(uiState: HomeUiState) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier =
+                Modifier
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "누적 요약",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            summaryRow(label = "총 달린 거리", value = "${uiState.totalDistanceMeters.formatDistanceKm()} km")
+            summaryRow(label = "달린 시간", value = uiState.totalDurationMillis.formatDurationText())
+            summaryRow(label = "평균 속도", value = "${uiState.averageSpeedMps.formatSpeedKmh()} km/h")
+            summaryRow(
+                label = "소모 칼로리",
+                value =
+                    if (uiState.hasProfile) {
+                        "${uiState.totalCaloriesKcal.formatCaloriesValue()} kcal"
+                    } else {
+                        "프로필 입력 시 계산 가능"
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+private fun homeNavigationButtons(actions: HomeScreenActions) {
+    Button(onClick = actions.onStartRun, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "러닝 시작")
+    }
+    Button(onClick = actions.onOpenHistory, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "기록")
+    }
+    Button(onClick = actions.onOpenStats, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "통계")
     }
 }
 

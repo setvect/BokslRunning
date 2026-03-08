@@ -3,9 +3,9 @@ package com.boksl.running.data.debug
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.boksl.running.core.util.estimateCaloriesKcal
 import com.boksl.running.data.local.db.AppDatabase
 import com.boksl.running.data.repository.DefaultRunningRepository
-import com.boksl.running.core.util.estimateCaloriesKcal
 import com.boksl.running.domain.model.AppPreferences
 import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.Profile
@@ -95,11 +95,18 @@ class DebugRunSeedGeneratorTest {
             repository.insertSession(realSession(externalId = "real-session-1", startedAtEpochMillis = 1_000L))
 
             generator.regenerateLastYear()
-            val initialSeedCount = database.runningSessionDao().getIdsByExternalIdPattern("$SESSION_EXTERNAL_ID_PREFIX-%").size
+            val initialSeedCount =
+                database.runningSessionDao().getIdsByExternalIdPattern(
+                    "$SESSION_EXTERNAL_ID_PREFIX-%",
+                ).size
 
             val secondRun = generator.regenerateLastYear()
             val sessions = repository.observeRecentSessions(limit = 500).first()
-            val realSessions = sessions.filterNot { session -> session.externalId.startsWith(SESSION_EXTERNAL_ID_PREFIX) }
+            val realSessions =
+                sessions.filterNot {
+                        session ->
+                    session.externalId.startsWith(SESSION_EXTERNAL_ID_PREFIX)
+                }
             val seedSessions = sessions.filter { session -> session.externalId.startsWith(SESSION_EXTERNAL_ID_PREFIX) }
 
             assertEquals(initialSeedCount, secondRun.deletedSessionCount)
@@ -197,7 +204,11 @@ private class FakeSeedProfileRepository(
 }
 
 private val TEST_ZONE: ZoneId = ZoneId.of("Asia/Seoul")
-private val FIXED_CLOCK: Clock = Clock.fixed(ZonedDateTime.of(2026, 3, 7, 12, 0, 0, 0, TEST_ZONE).toInstant(), TEST_ZONE)
+private val FIXED_CLOCK: Clock =
+    Clock.fixed(
+        ZonedDateTime.of(2026, 3, 7, 12, 0, 0, 0, TEST_ZONE).toInstant(),
+        TEST_ZONE,
+    )
 
 private val DEFAULT_PROFILE =
     Profile(

@@ -1,7 +1,8 @@
+@file:Suppress("LongMethod", "MagicNumber", "TooManyFunctions")
+
 package com.boksl.running.ui.feature.stats
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,9 +23,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.StatsChartMetric
@@ -49,19 +48,20 @@ import com.patrykandpatrick.vico.compose.m3.style.m3ChartStyle
 import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
 import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import com.patrykandpatrick.vico.core.axis.AxisPosition
-import com.patrykandpatrick.vico.core.chart.layout.HorizontalLayout
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
-import com.patrykandpatrick.vico.core.component.shape.Shapes
+import com.patrykandpatrick.vico.core.chart.layout.HorizontalLayout
 import com.patrykandpatrick.vico.core.chart.values.AxisValuesOverrider
 import com.patrykandpatrick.vico.core.chart.values.ChartValues
-import com.patrykandpatrick.vico.core.entry.ChartEntryModel
 import com.patrykandpatrick.vico.core.component.marker.MarkerComponent
+import com.patrykandpatrick.vico.core.component.shape.Shapes
+import com.patrykandpatrick.vico.core.entry.ChartEntryModel
 import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
 import com.patrykandpatrick.vico.core.entry.FloatEntry
 import com.patrykandpatrick.vico.core.marker.Marker
 import com.patrykandpatrick.vico.core.marker.MarkerLabelFormatter
 import com.patrykandpatrick.vico.core.marker.MarkerVisibilityChangeListener
 import com.patrykandpatrick.vico.core.scroll.InitialScroll
+import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.log10
 import kotlin.math.pow
@@ -272,7 +272,10 @@ private fun monthlyStatsChart(
             startAxis =
                 rememberStartAxis(
                     valueFormatter = startAxisValueFormatter,
-                    itemPlacer = remember(yAxisConfig.maxLabelCount) { AxisItemPlacer.Vertical.default(maxItemCount = yAxisConfig.maxLabelCount) },
+                    itemPlacer =
+                        remember(yAxisConfig.maxLabelCount) {
+                            AxisItemPlacer.Vertical.default(maxItemCount = yAxisConfig.maxLabelCount)
+                        },
                 ),
             bottomAxis =
                 rememberBottomAxis(
@@ -420,7 +423,8 @@ private fun resolveYAxisConfig(
     val rawMaxValue = chartValues.maxOrNull()?.takeIf { it > 0.0 } ?: 0.0
     return when (metric) {
         StatsChartMetric.DISTANCE,
-        StatsChartMetric.AVERAGE_SPEED -> {
+        StatsChartMetric.AVERAGE_SPEED,
+        -> {
             val intervalCount = DEFAULT_Y_AXIS_INTERVAL_COUNT
             val step = resolveNiceDecimalStep(rawMaxValue / intervalCount)
             val resolvedMaxValue =
@@ -455,9 +459,9 @@ private fun resolveNiceDecimalStep(rawStep: Double): Double {
 
 private fun Double.formatCompactAxisNumber(): String =
     if (this % 1.0 == 0.0) {
-        String.format("%.0f", this)
+        String.format(Locale.US, "%.0f", this)
     } else {
-        String.format("%.1f", this)
+        String.format(Locale.US, "%.1f", this)
     }
 
 private const val DEFAULT_Y_AXIS_INTERVAL_COUNT = 5
@@ -485,7 +489,13 @@ private fun resolveDurationYAxisConfig(rawMaxValue: Double): YAxisConfig {
                     DurationAxisCandidate(
                         maxValue = maxValue,
                         intervalCount = intervalCount,
-                        score = durationAxisCandidateScore(rawMaxValue = rawMaxValue, maxValue = maxValue, intervalCount = intervalCount, stepMinutes = stepMinutes),
+                        score =
+                            durationAxisCandidateScore(
+                                rawMaxValue = rawMaxValue,
+                                maxValue = maxValue,
+                                intervalCount = intervalCount,
+                                stepMinutes = stepMinutes,
+                            ),
                     )
                 }
             }.filter { candidate -> candidate.maxValue >= rawMaxValue }

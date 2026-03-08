@@ -41,12 +41,12 @@ class ExportViewModel
                         }
                     } catch (cancellationException: CancellationException) {
                         throw cancellationException
-                    } catch (throwable: Throwable) {
+                    } catch (exception: IllegalStateException) {
                         mutableUiState.update { uiState ->
                             uiState.copy(
                                 progress =
                                     ExportProgress.Error(
-                                        message = throwable.message ?: EXPORT_FAILURE_MESSAGE,
+                                        message = exception.message ?: EXPORT_FAILURE_MESSAGE,
                                     ),
                             )
                         }

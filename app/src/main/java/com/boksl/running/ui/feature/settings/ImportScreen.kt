@@ -22,18 +22,14 @@ import com.boksl.running.domain.model.ImportProgress
 @Composable
 fun importScreen(
     uiState: ImportUiState,
-    onNavigateUp: () -> Unit,
-    onStartImport: () -> Unit,
-    onCancelImport: () -> Unit,
-    onConfirm: () -> Unit,
-    onNavigateHome: () -> Unit,
+    actions: ImportScreenActions,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = "가져오기") },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateUp) {
+                    TextButton(onClick = actions.onNavigateUp) {
                         Text(text = "뒤로")
                     }
                 },
@@ -48,94 +44,120 @@ fun importScreen(
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            when (val progress = uiState.progress) {
-                ImportProgress.Idle -> {
-                    importInfoCard()
-                    Button(onClick = onStartImport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "가져오기 시작")
-                    }
-                }
+            importProgressContent(progress = uiState.progress, actions = actions)
+        }
+    }
+}
 
-                ImportProgress.BackingUp -> {
-                    importInfoCard()
-                    progressCard(message = "1/2 내부 백업 중…")
-                    Button(onClick = onCancelImport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "취소")
-                    }
-                }
+@Composable
+private fun importProgressContent(
+    progress: ImportProgress,
+    actions: ImportScreenActions,
+) {
+    when (progress) {
+        ImportProgress.Idle -> importIdleContent(actions = actions)
+        ImportProgress.BackingUp -> importRunningContent(message = "1/2 내부 백업 중…", actions = actions)
+        ImportProgress.Importing -> importRunningContent(message = "2/2 데이터 병합 중…", actions = actions)
+        is ImportProgress.Completed -> importCompletedContent(progress = progress, actions = actions)
+        is ImportProgress.Error -> importErrorContent(progress = progress, actions = actions)
+    }
+}
 
-                ImportProgress.Importing -> {
-                    importInfoCard()
-                    progressCard(message = "2/2 데이터 병합 중…")
-                    Button(onClick = onCancelImport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "취소")
-                    }
-                }
+@Composable
+private fun importIdleContent(actions: ImportScreenActions) {
+    importInfoCard()
+    Button(onClick = actions.onStartImport, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "가져오기 시작")
+    }
+}
 
-                is ImportProgress.Completed -> {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            if (progress.result.wasDuplicateFile) {
-                                Text(
-                                    text = "이미 가져온 파일입니다",
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
-                            } else {
-                                Text(
-                                    text = "가져오기 완료",
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
-                                Text(
-                                    text = "추가 ${progress.result.addedSessionCount}건, 중복 ${progress.result.duplicateSessionCount}건",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                                if (progress.result.appliedProfile) {
-                                    Text(
-                                        text = "프로필과 앱 설정도 함께 복원했습니다.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Button(onClick = onConfirm, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "확인")
-                    }
-                    Button(onClick = onNavigateHome, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "홈")
-                    }
-                }
+@Composable
+private fun importRunningContent(
+    message: String,
+    actions: ImportScreenActions,
+) {
+    importInfoCard()
+    progressCard(message = message)
+    Button(onClick = actions.onCancelImport, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "취소")
+    }
+}
 
-                is ImportProgress.Error -> {
-                    importInfoCard()
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = "가져오기 실패",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            Text(
-                                text = progress.message,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
-                    Button(onClick = onStartImport, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "다시 시도")
-                    }
-                    TextButton(onClick = onNavigateUp, modifier = Modifier.fillMaxWidth()) {
-                        Text(text = "뒤로")
-                    }
+@Composable
+private fun importCompletedContent(
+    progress: ImportProgress.Completed,
+    actions: ImportScreenActions,
+) {
+    importCompletedCard(progress = progress)
+    Button(onClick = actions.onConfirm, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "확인")
+    }
+    Button(onClick = actions.onNavigateHome, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "홈")
+    }
+}
+
+@Composable
+private fun importCompletedCard(progress: ImportProgress.Completed) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (progress.result.wasDuplicateFile) {
+                Text(
+                    text = "이미 가져온 파일입니다",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            } else {
+                Text(
+                    text = "가져오기 완료",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text =
+                        "추가 ${progress.result.addedSessionCount}건, " +
+                            "중복 ${progress.result.duplicateSessionCount}건",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (progress.result.appliedProfile) {
+                    Text(
+                        text = "프로필과 앱 설정도 함께 복원했습니다.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun importErrorContent(
+    progress: ImportProgress.Error,
+    actions: ImportScreenActions,
+) {
+    importInfoCard()
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "가져오기 실패",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Text(
+                text = progress.message,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+    Button(onClick = actions.onStartImport, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "다시 시도")
+    }
+    TextButton(onClick = actions.onNavigateUp, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "뒤로")
     }
 }
 
