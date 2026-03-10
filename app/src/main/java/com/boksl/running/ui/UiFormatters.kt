@@ -3,6 +3,7 @@ package com.boksl.running.ui
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.text.NumberFormat
 import java.util.Locale
 
 fun Double.formatDistanceKm(): String = String.format(Locale.US, "%.2f", this / METERS_PER_KILOMETER)
@@ -31,6 +32,15 @@ fun Double.formatSpeedKmh(): String = String.format(Locale.US, "%.2f", this * KI
 
 fun Double.formatCaloriesValue(): String = String.format(Locale.US, "%.0f", this)
 
+fun Double.formatGroupedIntegerText(): String = NumberFormat.getIntegerInstance(Locale.KOREA).format(this.toLong())
+
+fun Long.formatHourMinuteKoreanText(): String {
+    val totalMinutes = this / MILLIS_PER_SECOND / SECONDS_PER_MINUTE
+    val hours = totalMinutes / MINUTES_PER_HOUR
+    val minutes = totalMinutes % MINUTES_PER_HOUR
+    return String.format(Locale.KOREA, "%03d시간 %02d분", hours, minutes)
+}
+
 fun Double?.formatCaloriesText(): String = this?.let { "${it.formatCaloriesValue()} kcal" } ?: "프로필 입력 시 계산 가능"
 
 fun Long.formatSessionDateTimeText(): String =
@@ -46,4 +56,5 @@ private const val METERS_PER_KILOMETER = 1_000.0
 private const val MILLIS_PER_SECOND = 1_000L
 private const val SECONDS_PER_MINUTE = 60L
 private const val SECONDS_PER_HOUR = 3_600L
+private const val MINUTES_PER_HOUR = 60L
 private const val KILOMETERS_PER_HOUR_PER_METERS_PER_SECOND = 3.6
