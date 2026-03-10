@@ -14,6 +14,8 @@ interface RunningRepository {
 
     fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>>
 
+    fun observeSavedSessionCount(): Flow<Int>
+
     fun observeSession(sessionId: Long): Flow<RunningSession?>
 
     fun observeSavedSessionsPaged(): Flow<PagingData<RunningSession>>

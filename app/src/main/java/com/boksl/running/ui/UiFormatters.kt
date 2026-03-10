@@ -41,6 +41,18 @@ fun Long.formatHourMinuteKoreanText(): String {
     return String.format(Locale.KOREA, "%03d시간 %02d분", hours, minutes)
 }
 
+fun Long.formatHourMinuteSecondKoreanText(): String {
+    val totalSeconds = this / MILLIS_PER_SECOND
+    val hours = totalSeconds / SECONDS_PER_HOUR
+    val minutes = (totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
+    val seconds = totalSeconds % SECONDS_PER_MINUTE
+    return if (hours > 0L) {
+        String.format(Locale.KOREA, "%02d시간 %02d분 %02d초", hours, minutes, seconds)
+    } else {
+        String.format(Locale.KOREA, "%02d분 %02d초", minutes, seconds)
+    }
+}
+
 fun Double?.formatCaloriesText(): String = this?.let { "${it.formatCaloriesValue()} kcal" } ?: "프로필 입력 시 계산 가능"
 
 fun Long.formatSessionDateTimeText(): String =

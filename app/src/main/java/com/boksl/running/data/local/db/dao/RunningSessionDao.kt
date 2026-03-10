@@ -40,6 +40,14 @@ interface RunningSessionDao {
     )
     fun observeMonthlyStats(status: SessionStatus = SessionStatus.SAVED): Flow<List<MonthlyStatsProjection>>
 
+    @Query(
+        """
+        SELECT COUNT(*) FROM running_sessions
+        WHERE status = :status
+        """,
+    )
+    fun observeSessionCount(status: SessionStatus = SessionStatus.SAVED): Flow<Int>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: RunningSessionEntity): Long
 

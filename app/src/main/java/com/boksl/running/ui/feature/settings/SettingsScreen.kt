@@ -3,47 +3,45 @@ package com.boksl.running.ui.feature.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.boksl.running.ui.common.AppDialog
+import com.boksl.running.ui.common.AppPrimaryButton
+import com.boksl.running.ui.common.AppScreenHeader
+import com.boksl.running.ui.common.AppSectionCard
+import com.boksl.running.ui.common.AppSecondaryButton
+import com.boksl.running.ui.common.AppStatusCard
+import com.boksl.running.ui.common.AppTextAction
+import com.boksl.running.ui.common.AppUiTokens
+import com.boksl.running.ui.common.appScreenModifier
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun settingsScreen(
     uiState: SettingsUiState,
     actions: SettingsScreenActions,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "설정") },
-                navigationIcon = {
-                    TextButton(onClick = actions.onNavigateUp) {
-                        Text(text = "뒤로")
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
+    Scaffold(containerColor = AppUiTokens.Background) { innerPadding ->
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .then(appScreenModifier())
+                    .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(AppUiTokens.ScreenSpacing),
         ) {
+            AppScreenHeader(
+                title = "설정",
+                onNavigateUp = actions.onNavigateUp,
+            )
             settingsPrimaryActions(uiState = uiState, actions = actions)
             if (uiState.isDebugToolsVisible) {
                 debugToolsSection(
@@ -68,25 +66,31 @@ private fun settingsPrimaryActions(
     uiState: SettingsUiState,
     actions: SettingsScreenActions,
 ) {
-    Button(onClick = actions.onEditProfile, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "프로필 정보 수정")
-    }
-    Button(
-        onClick = actions.onOpenExport,
-        enabled = !uiState.isBusy,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(text = "전체 내보내기")
-    }
-    Button(
-        onClick = actions.onOpenImport,
-        enabled = !uiState.isBusy,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(text = "가져오기")
-    }
-    Button(onClick = actions.onNavigateHome, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "홈")
+    AppSectionCard {
+        Text(
+            text = "앱 설정",
+            style = MaterialTheme.typography.titleMedium,
+            color = AppUiTokens.TextPrimary,
+            fontWeight = FontWeight.SemiBold,
+        )
+        AppPrimaryButton(
+            text = "프로필 정보 수정",
+            onClick = actions.onEditProfile,
+        )
+        AppSecondaryButton(
+            text = "전체 내보내기",
+            onClick = actions.onOpenExport,
+            enabled = !uiState.isBusy,
+        )
+        AppSecondaryButton(
+            text = "가져오기",
+            onClick = actions.onOpenImport,
+            enabled = !uiState.isBusy,
+        )
+        AppTextAction(
+            text = "홈으로 이동",
+            onClick = actions.onNavigateHome,
+        )
     }
 }
 
@@ -95,47 +99,41 @@ private fun debugToolsSection(
     uiState: SettingsUiState,
     actions: SettingsScreenActions,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "개발 도구",
-                style = MaterialTheme.typography.titleMedium,
+    AppSectionCard {
+        Text(
+            text = "개발 도구",
+            style = MaterialTheme.typography.titleMedium,
+            color = AppUiTokens.TextPrimary,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = "debug 빌드에서만 테스트 데이터를 생성하거나 정리할 수 있습니다.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppUiTokens.TextSecondary,
+        )
+        AppSecondaryButton(
+            text = "최근 12개월 테스트 데이터 생성",
+            onClick = actions.onGenerateSeedDataClick,
+            enabled = !uiState.isBusy,
+        )
+        AppSecondaryButton(
+            text = "생성한 테스트 데이터 삭제",
+            onClick = actions.onDeleteSeedDataClick,
+            enabled = !uiState.isBusy,
+        )
+        uiState.busyMessage?.let { busyMessage ->
+            AppStatusCard(
+                title = "작업 중",
+                message = busyMessage,
+                accentColor = AppUiTokens.Accent,
             )
-            Text(
-                text = "debug 빌드에서만 테스트 데이터를 생성하거나 정리할 수 있습니다.",
-                style = MaterialTheme.typography.bodyMedium,
+        }
+        uiState.statusMessage?.let { statusMessage ->
+            settingsStatusCard(
+                message = statusMessage,
+                statusKind = uiState.statusKind,
+                onClearStatusMessage = actions.onClearStatusMessage,
             )
-            Button(
-                onClick = actions.onGenerateSeedDataClick,
-                enabled = !uiState.isBusy,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = "최근 12개월 테스트 데이터 생성")
-            }
-            Button(
-                onClick = actions.onDeleteSeedDataClick,
-                enabled = !uiState.isBusy,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = "생성한 테스트 데이터 삭제")
-            }
-            uiState.busyMessage?.let { busyMessage ->
-                Text(
-                    text = busyMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            uiState.statusMessage?.let { statusMessage ->
-                settingsStatusCard(
-                    message = statusMessage,
-                    statusKind = uiState.statusKind,
-                    onClearStatusMessage = actions.onClearStatusMessage,
-                )
-            }
         }
     }
 }
@@ -146,25 +144,21 @@ private fun settingsStatusCard(
     statusKind: SettingsStatusKind,
     onClearStatusMessage: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color =
-                    when (statusKind) {
-                        SettingsStatusKind.SUCCESS -> MaterialTheme.colorScheme.primary
-                        SettingsStatusKind.ERROR -> MaterialTheme.colorScheme.error
-                        SettingsStatusKind.IDLE -> MaterialTheme.colorScheme.onSurface
-                    },
-            )
-            TextButton(onClick = onClearStatusMessage, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "메시지 닫기")
-            }
-        }
+    AppSectionCard(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color =
+                when (statusKind) {
+                    SettingsStatusKind.SUCCESS -> AppUiTokens.Accent
+                    SettingsStatusKind.ERROR -> AppUiTokens.Error
+                    SettingsStatusKind.IDLE -> AppUiTokens.TextPrimary
+                },
+        )
+        AppTextAction(
+            text = "메시지 닫기",
+            onClick = onClearStatusMessage,
+        )
     }
 }
 
@@ -177,26 +171,19 @@ private fun debugActionConfirmationDialog(
     val (title, message) =
         when (pendingAction) {
             SettingsPendingAction.GENERATE ->
-                "테스트 데이터 생성" to
+                "테스트 데이터를 생성할까요?" to
                     "기존에 생성한 테스트 데이터를 지우고 최근 12개월 테스트 데이터를 다시 만듭니다. 실제 사용자 기록은 유지됩니다."
             SettingsPendingAction.DELETE ->
-                "테스트 데이터 삭제" to
+                "테스트 데이터를 삭제할까요?" to
                     "debug 생성기로 만든 테스트 데이터만 삭제합니다. 실제 사용자 기록은 유지됩니다."
         }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = title) },
-        text = { Text(text = message) },
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text(text = "확인")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = "취소")
-            }
-        },
+    AppDialog(
+        title = title,
+        message = message,
+        onDismiss = onDismiss,
+        confirmText = "확인",
+        onConfirm = onConfirm,
+        confirmColor = AppUiTokens.Accent,
     )
 }

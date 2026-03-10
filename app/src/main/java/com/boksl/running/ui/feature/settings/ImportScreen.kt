@@ -3,47 +3,43 @@ package com.boksl.running.ui.feature.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.boksl.running.domain.model.ImportProgress
+import com.boksl.running.ui.common.AppPrimaryButton
+import com.boksl.running.ui.common.AppScreenHeader
+import com.boksl.running.ui.common.AppSectionCard
+import com.boksl.running.ui.common.AppSecondaryButton
+import com.boksl.running.ui.common.AppStatusCard
+import com.boksl.running.ui.common.AppTextAction
+import com.boksl.running.ui.common.AppUiTokens
+import com.boksl.running.ui.common.appScreenModifier
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun importScreen(
     uiState: ImportUiState,
     actions: ImportScreenActions,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "가져오기") },
-                navigationIcon = {
-                    TextButton(onClick = actions.onNavigateUp) {
-                        Text(text = "뒤로")
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
+    Scaffold(containerColor = AppUiTokens.Background) { innerPadding ->
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .then(appScreenModifier())
+                    .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(AppUiTokens.ScreenSpacing),
         ) {
+            AppScreenHeader(
+                title = "가져오기",
+                onNavigateUp = actions.onNavigateUp,
+            )
             importProgressContent(progress = uiState.progress, actions = actions)
         }
     }
@@ -56,8 +52,8 @@ private fun importProgressContent(
 ) {
     when (progress) {
         ImportProgress.Idle -> importIdleContent(actions = actions)
-        ImportProgress.BackingUp -> importRunningContent(message = "1/2 내부 백업 중…", actions = actions)
-        ImportProgress.Importing -> importRunningContent(message = "2/2 데이터 병합 중…", actions = actions)
+        ImportProgress.BackingUp -> importRunningContent(message = "1/2 내부 백업 중", actions = actions)
+        ImportProgress.Importing -> importRunningContent(message = "2/2 데이터 병합 중", actions = actions)
         is ImportProgress.Completed -> importCompletedContent(progress = progress, actions = actions)
         is ImportProgress.Error -> importErrorContent(progress = progress, actions = actions)
     }
@@ -66,9 +62,7 @@ private fun importProgressContent(
 @Composable
 private fun importIdleContent(actions: ImportScreenActions) {
     importInfoCard()
-    Button(onClick = actions.onStartImport, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "가져오기 시작")
-    }
+    AppPrimaryButton(text = "가져오기 시작", onClick = actions.onStartImport)
 }
 
 @Composable
@@ -77,10 +71,12 @@ private fun importRunningContent(
     actions: ImportScreenActions,
 ) {
     importInfoCard()
-    progressCard(message = message)
-    Button(onClick = actions.onCancelImport, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "취소")
-    }
+    AppStatusCard(
+        title = message,
+        message = "선택한 JSON 파일을 검증하고 현재 데이터와 병합하고 있습니다.",
+        accentColor = AppUiTokens.Accent,
+    )
+    AppSecondaryButton(text = "취소", onClick = actions.onCancelImport)
 }
 
 @Composable
@@ -89,43 +85,36 @@ private fun importCompletedContent(
     actions: ImportScreenActions,
 ) {
     importCompletedCard(progress = progress)
-    Button(onClick = actions.onConfirm, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "확인")
-    }
-    Button(onClick = actions.onNavigateHome, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "홈")
-    }
+    AppPrimaryButton(text = "확인", onClick = actions.onConfirm)
+    AppTextAction(text = "홈으로 이동", onClick = actions.onNavigateHome)
 }
 
 @Composable
 private fun importCompletedCard(progress: ImportProgress.Completed) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (progress.result.wasDuplicateFile) {
+    AppSectionCard {
+        if (progress.result.wasDuplicateFile) {
+            Text(
+                text = "이미 가져온 파일입니다",
+                style = MaterialTheme.typography.titleMedium,
+                color = AppUiTokens.TextPrimary,
+            )
+        } else {
+            Text(
+                text = "가져오기 완료",
+                style = MaterialTheme.typography.titleMedium,
+                color = AppUiTokens.TextPrimary,
+            )
+            Text(
+                text = "추가 ${progress.result.addedSessionCount}건, 중복 ${progress.result.duplicateSessionCount}건",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppUiTokens.TextSecondary,
+            )
+            if (progress.result.appliedProfile) {
                 Text(
-                    text = "이미 가져온 파일입니다",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            } else {
-                Text(
-                    text = "가져오기 완료",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text =
-                        "추가 ${progress.result.addedSessionCount}건, " +
-                            "중복 ${progress.result.duplicateSessionCount}건",
+                    text = "프로필과 앱 설정도 함께 복원했습니다.",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = AppUiTokens.TextSecondary,
                 )
-                if (progress.result.appliedProfile) {
-                    Text(
-                        text = "프로필과 앱 설정도 함께 복원했습니다.",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
             }
         }
     }
@@ -137,64 +126,27 @@ private fun importErrorContent(
     actions: ImportScreenActions,
 ) {
     importInfoCard()
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = "가져오기 실패",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.error,
-            )
-            Text(
-                text = progress.message,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-    Button(onClick = actions.onStartImport, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "다시 시도")
-    }
-    TextButton(onClick = actions.onNavigateUp, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "뒤로")
-    }
+    AppStatusCard(
+        title = "가져오기 실패",
+        message = progress.message,
+        accentColor = AppUiTokens.Error,
+    )
+    AppPrimaryButton(text = "다시 시도", onClick = actions.onStartImport)
+    AppTextAction(text = "뒤로", onClick = actions.onNavigateUp)
 }
 
 @Composable
 private fun importInfoCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = "가져오기 전에 현재 데이터를 내부 백업합니다",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = "정책: 기존 데이터 유지 + 가져온 데이터 병합",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
-
-@Composable
-private fun progressCard(message: String) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = "선택한 JSON 파일을 검증하고 현재 데이터와 병합하고 있습니다.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
+    AppSectionCard {
+        Text(
+            text = "가져오기 전에 현재 데이터를 내부 백업합니다",
+            style = MaterialTheme.typography.titleMedium,
+            color = AppUiTokens.TextPrimary,
+        )
+        Text(
+            text = "정책: 기존 데이터 유지 + 가져온 데이터 병합",
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppUiTokens.TextSecondary,
+        )
     }
 }

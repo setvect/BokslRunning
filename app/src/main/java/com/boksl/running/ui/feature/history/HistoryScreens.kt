@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,16 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,45 +26,64 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
+import com.boksl.running.ui.common.AppDialog
+import com.boksl.running.ui.common.AppPrimaryButton
+import com.boksl.running.ui.common.AppScreenHeader
+import com.boksl.running.ui.common.AppSectionCard
+import com.boksl.running.ui.common.AppSecondaryButton
+import com.boksl.running.ui.common.AppStatusCard
+import com.boksl.running.ui.common.AppTextAction
+import com.boksl.running.ui.common.AppUiTokens
+import com.boksl.running.ui.common.appScreenModifier
 import com.boksl.running.ui.feature.permission.locationPermissionDialog
 import com.boksl.running.ui.feature.run.runMapSection
 import com.boksl.running.ui.feature.run.toLatLng
 import com.boksl.running.ui.formatCaloriesText
 import com.boksl.running.ui.formatDistanceKm
-import com.boksl.running.ui.formatDurationText
+import com.boksl.running.ui.formatGroupedIntegerText
+import com.boksl.running.ui.formatHourMinuteSecondKoreanText
 import com.boksl.running.ui.formatPaceText
 import com.boksl.running.ui.formatSessionDateTimeText
 import com.boksl.running.ui.formatSpeedKmh
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun historyScreen(
     uiState: HistoryListUiState,
     pagedItems: LazyPagingItems<HistoryListItemUiState>,
     actions: HistoryScreenActions,
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "기록") },
-                navigationIcon = {
-                    TextButton(onClick = actions.onNavigateUp) {
-                        Text(text = "뒤로")
-                    }
-                },
+    Scaffold(containerColor = AppUiTokens.Background) { innerPadding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .then(appScreenModifier()),
+            verticalArrangement = Arrangement.spacedBy(AppUiTokens.ScreenSpacing),
+        ) {
+            AppScreenHeader(
+                title = "기록",
+                onNavigateUp = actions.onNavigateUp,
             )
-        },
-    ) { innerPadding ->
-        historyListContent(
-            pagedItems = pagedItems,
-            innerPadding = innerPadding,
-            onOpenSession = actions.onOpenSession,
-            onStartRun = actions.onStartRun,
-        )
+            Text(
+                text = "전체 ${uiState.totalCount.toDouble().formatGroupedIntegerText()}건",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppUiTokens.TextSecondary,
+                textAlign = TextAlign.End,
+            )
+            historyListContent(
+                pagedItems = pagedItems,
+                onOpenSession = actions.onOpenSession,
+                onStartRun = actions.onStartRun,
+            )
+        }
     }
 
     uiState.permissionDialogState?.let { dialogState ->
@@ -81,7 +95,6 @@ fun historyScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun historyDetailScreen(
     uiState: HistoryDetailUiState,
@@ -93,57 +106,45 @@ fun historyDetailScreen(
 ) {
     val canDelete = uiState.session != null && !uiState.isDeleting && !uiState.isNotFound
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "기록 상세") },
-                navigationIcon = {
-                    TextButton(onClick = onNavigateUp) {
-                        Text(text = "뒤로")
-                    }
-                },
-                actions = {
+    Scaffold(containerColor = AppUiTokens.Background) { innerPadding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .then(appScreenModifier()),
+            verticalArrangement = Arrangement.spacedBy(AppUiTokens.ScreenSpacing),
+        ) {
+            AppScreenHeader(
+                title = "기록 상세",
+                onNavigateUp = onNavigateUp,
+                endContent = {
                     if (uiState.session != null) {
-                        TextButton(
+                        AppTextAction(
+                            text = "삭제",
                             onClick = onDeleteClick,
                             enabled = canDelete,
-                        ) {
-                            Text(
-                                text = "삭제",
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
+                            color = AppUiTokens.Error,
+                        )
                     }
                 },
             )
-        },
-    ) { innerPadding ->
-        historyDetailContent(
-            uiState = uiState,
-            innerPadding = innerPadding,
-            onNavigateUp = onNavigateUp,
-            onClearDeleteError = onClearDeleteError,
-        )
+            historyDetailContent(
+                uiState = uiState,
+                onNavigateUp = onNavigateUp,
+                onClearDeleteError = onClearDeleteError,
+            )
+        }
     }
 
     if (uiState.showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = onDismissDeleteConfirmation,
-            title = { Text(text = "기록을 삭제할까요?") },
-            text = { Text(text = "삭제한 기록은 복구할 수 없어요.") },
-            confirmButton = {
-                TextButton(onClick = onConfirmDelete) {
-                    Text(
-                        text = "삭제",
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissDeleteConfirmation) {
-                    Text(text = "취소")
-                }
-            },
+        AppDialog(
+            title = "기록을 삭제할까요?",
+            message = "삭제한 기록은 복구할 수 없어요.",
+            onDismiss = onDismissDeleteConfirmation,
+            confirmText = "삭제",
+            onConfirm = onConfirmDelete,
+            confirmColor = AppUiTokens.Error,
         )
     }
 }
@@ -151,7 +152,6 @@ fun historyDetailScreen(
 @Composable
 private fun historyListContent(
     pagedItems: LazyPagingItems<HistoryListItemUiState>,
-    innerPadding: PaddingValues,
     onOpenSession: (Long) -> Unit,
     onStartRun: () -> Unit,
 ) {
@@ -159,37 +159,19 @@ private fun historyListContent(
     val appendState = pagedItems.loadState.append
 
     when {
-        refreshState is LoadState.Loading && pagedItems.itemCount == 0 ->
-            historyLoadingState(
-                innerPadding = innerPadding,
-            )
+        refreshState is LoadState.Loading && pagedItems.itemCount == 0 -> historyLoadingState()
         refreshState is LoadState.Error && pagedItems.itemCount == 0 ->
             historyErrorState(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(16.dp),
                 message = "기록을 불러오지 못했습니다",
                 actionLabel = "다시 시도",
                 onAction = pagedItems::retry,
             )
         refreshState is LoadState.NotLoading && pagedItems.itemCount == 0 ->
-            historyEmptyState(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(16.dp),
-                onStartRun = onStartRun,
-            )
+            historyEmptyState(onStartRun = onStartRun)
         else ->
             LazyColumn(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(
@@ -211,7 +193,6 @@ private fun historyListContent(
                     is LoadState.Error -> {
                         item(key = "append_error") {
                             historyErrorState(
-                                modifier = Modifier.fillMaxWidth(),
                                 message = "추가 기록을 불러오지 못했습니다",
                                 actionLabel = "다시 시도",
                                 onAction = pagedItems::retry,
@@ -227,25 +208,18 @@ private fun historyListContent(
 @Composable
 private fun historyDetailContent(
     uiState: HistoryDetailUiState,
-    innerPadding: PaddingValues,
     onNavigateUp: () -> Unit,
     onClearDeleteError: () -> Unit,
 ) {
     when {
-        uiState.isLoading -> historyLoadingState(innerPadding = innerPadding)
+        uiState.isLoading -> historyLoadingState()
         uiState.isNotFound ->
             historyNotFoundState(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(16.dp),
                 onNavigateUp = onNavigateUp,
             )
         else ->
             historyDetailBody(
                 uiState = uiState,
-                innerPadding = innerPadding,
                 onClearDeleteError = onClearDeleteError,
             )
     }
@@ -254,7 +228,6 @@ private fun historyDetailContent(
 @Composable
 private fun historyDetailBody(
     uiState: HistoryDetailUiState,
-    innerPadding: PaddingValues,
     onClearDeleteError: () -> Unit,
 ) {
     val session = checkNotNull(uiState.session)
@@ -265,8 +238,6 @@ private fun historyDetailBody(
         modifier =
             Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
                 .verticalScroll(
                     state = rememberScrollState(),
                     enabled = !isMapTouchActive,
@@ -274,85 +245,76 @@ private fun historyDetailBody(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         uiState.deleteErrorMessage?.let { message ->
-            historyDeleteErrorCard(
+            AppStatusCard(
+                title = "삭제 실패",
                 message = message,
-                onClearDeleteError = onClearDeleteError,
+                accentColor = AppUiTokens.Error,
+            )
+            AppTextAction(
+                text = "닫기",
+                onClick = onClearDeleteError,
             )
         }
-        Text(
-            text = session.startedAtEpochMillis.formatSessionDateTimeText(),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        runMapSection(
-            currentLocation = routePoints.lastOrNull(),
-            routePoints = routePoints,
-            modifier = Modifier.fillMaxWidth(),
-            maxZoom = 17f,
-            onTouchActiveChanged = { isMapTouchActive = it },
-        )
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+        AppSectionCard(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = session.startedAtEpochMillis.formatSessionDateTimeText(),
+                style = MaterialTheme.typography.titleLarge,
+                color = AppUiTokens.TextPrimary,
+                fontWeight = FontWeight.Bold,
+            )
+            runMapSection(
+                currentLocation = routePoints.lastOrNull(),
+                routePoints = routePoints,
+                modifier = Modifier.fillMaxWidth(),
+                maxZoom = 17f,
+                onTouchActiveChanged = { isMapTouchActive = it },
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(text = "요약", style = MaterialTheme.typography.titleMedium)
-                historySummaryRow(
+                historyDetailMetric(
                     label = "거리",
                     value = "${session.stats.distanceMeters.formatDistanceKm()} km",
+                    modifier = Modifier.weight(1f),
                 )
-                historySummaryRow(
+                historyDetailMetric(
                     label = "시간",
-                    value = session.stats.durationMillis.formatDurationText(),
+                    value = session.stats.durationMillis.formatHourMinuteSecondKoreanText(),
+                    modifier = Modifier.weight(1f),
                 )
-                historySummaryRow(
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                historyDetailMetric(
                     label = "평균 페이스",
                     value = session.stats.averagePaceSecPerKm.formatPaceText(),
+                    modifier = Modifier.weight(1f),
                 )
-                historySummaryRow(
+                historyDetailMetric(
                     label = "최고 속도",
                     value = "${session.stats.maxSpeedMps.formatSpeedKmh()} km/h",
-                )
-                historySummaryRow(
-                    label = "칼로리",
-                    value = session.stats.calorieKcal.formatCaloriesText(),
+                    modifier = Modifier.weight(1f),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun historyDeleteErrorCard(
-    message: String,
-    onClearDeleteError: () -> Unit,
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
+            historyDetailMetric(
+                label = "칼로리",
+                value = session.stats.calorieKcal.formatCaloriesText(),
+                modifier = Modifier.fillMaxWidth(),
             )
-            TextButton(onClick = onClearDeleteError) {
-                Text(text = "닫기")
-            }
         }
     }
 }
 
 @Composable
-private fun historyLoadingState(innerPadding: PaddingValues) {
+private fun historyLoadingState() {
     Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(color = AppUiTokens.Accent)
     }
 }
 
@@ -365,7 +327,7 @@ private fun historyAppendLoadingItem() {
                 .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(color = AppUiTokens.Accent)
     }
 }
 
@@ -374,102 +336,96 @@ private fun historyListItemCard(
     item: HistoryListItemUiState,
     onClick: () -> Unit,
 ) {
-    Card(
+    AppSectionCard(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
+            Modifier.clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        Text(
+            text = item.startedAtEpochMillis.formatSessionDateTimeText(),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppUiTokens.TextSecondary,
+        )
+        Text(
+            text = "${item.distanceMeters.formatDistanceKm()} km",
+            style = MaterialTheme.typography.headlineSmall,
+            color = AppUiTokens.TextPrimary,
+            fontWeight = FontWeight.Bold,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            Text(
-                text = item.startedAtEpochMillis.formatSessionDateTimeText(),
-                style = MaterialTheme.typography.titleMedium,
+            historyInlineMetric(
+                label = "시간",
+                value = item.durationMillis.formatHourMinuteSecondKoreanText(),
+                modifier = Modifier.weight(1f),
             )
-            historySummaryRow(label = "거리", value = "${item.distanceMeters.formatDistanceKm()} km")
-            historySummaryRow(label = "시간", value = item.durationMillis.formatDurationText())
-            historySummaryRow(label = "평균 페이스", value = item.averagePaceSecPerKm.formatPaceText())
+            historyInlineMetric(
+                label = "평균 페이스",
+                value = item.averagePaceSecPerKm.formatPaceText(),
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
 
 @Composable
 private fun historyEmptyState(
-    modifier: Modifier = Modifier,
     onStartRun: () -> Unit,
 ) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "아직 저장된 기록이 없어요",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = "첫 러닝을 시작하면 여기에서 다시 볼 수 있어요.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Button(onClick = onStartRun) {
-                Text(text = "러닝 시작")
-            }
-        }
+    AppSectionCard {
+        Text(
+            text = "아직 저장된 기록이 없어요",
+            style = MaterialTheme.typography.titleMedium,
+            color = AppUiTokens.TextPrimary,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = "첫 달리기를 시작하면 여기에서 다시 볼 수 있어요.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppUiTokens.TextSecondary,
+        )
+        AppPrimaryButton(
+            text = "달리기 시작",
+            onClick = onStartRun,
+        )
     }
 }
 
 @Composable
 private fun historyNotFoundState(
-    modifier: Modifier = Modifier,
     onNavigateUp: () -> Unit,
 ) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "기록을 찾을 수 없습니다",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            TextButton(onClick = onNavigateUp) {
-                Text(text = "뒤로")
-            }
-        }
+    AppSectionCard {
+        Text(
+            text = "기록을 찾을 수 없습니다",
+            style = MaterialTheme.typography.titleMedium,
+            color = AppUiTokens.TextPrimary,
+        )
+        AppSecondaryButton(
+            text = "이전으로",
+            onClick = onNavigateUp,
+        )
     }
 }
 
 @Composable
 private fun historyErrorState(
-    modifier: Modifier = Modifier,
     message: String,
     actionLabel: String,
     onAction: () -> Unit,
 ) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.titleMedium,
-            )
-            TextButton(onClick = onAction) {
-                Text(text = actionLabel)
-            }
-        }
+    AppSectionCard {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.titleMedium,
+            color = AppUiTokens.TextPrimary,
+        )
+        AppSecondaryButton(
+            text = actionLabel,
+            onClick = onAction,
+        )
     }
 }
 
@@ -478,8 +434,64 @@ private fun historySummaryRow(
     label: String,
     value: String,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Text(text = value, style = MaterialTheme.typography.titleSmall)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = AppUiTokens.TextSecondary,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = AppUiTokens.TextPrimary,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun historyDetailMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = AppUiTokens.TextSecondary,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = AppUiTokens.TextPrimary,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun historyInlineMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = AppUiTokens.TextSecondary,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleSmall,
+            color = AppUiTokens.TextPrimary,
+        )
     }
 }

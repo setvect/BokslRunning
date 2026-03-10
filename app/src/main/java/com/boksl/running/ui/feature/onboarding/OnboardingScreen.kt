@@ -4,14 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import com.boksl.running.ui.common.AppPrimaryButton
+import com.boksl.running.ui.common.AppSectionCard
+import com.boksl.running.ui.common.AppUiTokens
+import com.boksl.running.ui.common.appScreenModifier
 
 @Composable
 fun onboardingScreen(
@@ -19,25 +21,34 @@ fun onboardingScreen(
     modifier: Modifier = Modifier,
     uiState: OnboardingScreenState = OnboardingScreenState(),
 ) {
-    Scaffold(modifier = modifier) { innerPadding ->
+    Scaffold(
+        modifier = modifier,
+        containerColor = AppUiTokens.Background,
+    ) { innerPadding ->
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(24.dp),
+                    .then(appScreenModifier()),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = uiState.title,
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            Button(
-                onClick = onStartClick,
-                modifier = Modifier.padding(top = 24.dp),
-            ) {
-                Text(text = uiState.buttonLabel)
+            AppSectionCard {
+                Text(
+                    text = "복슬달리기",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = AppUiTokens.TextPrimary,
+                )
+                Text(
+                    text = uiState.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AppUiTokens.TextSecondary,
+                )
+                AppPrimaryButton(
+                    text = uiState.buttonLabel,
+                    onClick = onStartClick,
+                )
             }
         }
     }

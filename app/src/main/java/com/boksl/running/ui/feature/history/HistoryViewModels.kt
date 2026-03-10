@@ -47,8 +47,13 @@ class HistoryListViewModel
                 }
 
         val uiState: StateFlow<HistoryListUiState> =
-            combine(permissionDialogState, permissionReturnAction) { dialogState, pendingAction ->
+            combine(
+                runningRepository.observeSavedSessionCount(),
+                permissionDialogState,
+                permissionReturnAction,
+            ) { sessionCount, dialogState, pendingAction ->
                 HistoryListUiState(
+                    totalCount = sessionCount,
                     permissionDialogState = dialogState,
                     permissionReturnAction = pendingAction,
                 )
@@ -160,6 +165,7 @@ class HistoryDetailViewModel
     }
 
 data class HistoryListUiState(
+    val totalCount: Int = 0,
     val permissionDialogState: LocationPermissionUiState? = null,
     val permissionReturnAction: PermissionReturnAction = PermissionReturnAction.None,
 )

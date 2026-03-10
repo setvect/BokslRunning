@@ -54,6 +54,11 @@ class DefaultRunningRepository
                     )
                 }.flowOn(ioDispatcher)
 
+        override fun observeSavedSessionCount(): Flow<Int> =
+            runningSessionDao
+                .observeSessionCount(status = SessionStatus.SAVED)
+                .flowOn(ioDispatcher)
+
         override fun observeSession(sessionId: Long): Flow<RunningSession?> =
             runningSessionDao
                 .observeById(sessionId)
