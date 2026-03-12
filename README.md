@@ -1,128 +1,49 @@
-# BokslRunning
+# 복슬달리기
 
-현재 프로젝트에서 자주 사용하는 Lint/컴파일/빌드 명령어 모음입니다.
+복슬달리기는 개인용 러닝 기록 앱입니다.
+러닝 경로, 시간, 거리, 페이스를 기록하고 누적 통계와 월별 흐름을 확인할 수 있으며, 전체 데이터를 JSON 파일로 내보내고 다시 가져올 수 있습니다.
 
-## 환경
+100% 바이브코딩(Codex)으로 개발했습니다.
+
+## 주요 기능
+
+- GPS 기반 러닝 기록과 지도 경로 저장
+- 러닝 준비 화면과 실시간 러닝 화면 제공
+- 기록 목록/상세 조회와 삭제
+- 누적 거리, 시간, 평균 속도와 월별 통계 확인
+- 전체 데이터 내보내기/가져오기
+- 오프라인 상태에서도 핵심 기록 기능 유지
+
+## 빠른 실행
+
+권장 환경:
 
 - JDK 17
-- Gradle Wrapper 사용: `./gradlew`
-- Android SDK / Platform Tools (`adb`) 설치
+- Android SDK / Platform Tools (`adb`)
+- Gradle Wrapper 사용
 
-## 로컬 실행
+Android Studio에서 `app` 실행이 가장 간단합니다.
 
-- Android Studio에서 실행 (권장)
+CLI로 바로 설치/실행하려면:
+
 ```bash
-# 1) Android Studio로 프로젝트 열기
-# 2) 실행할 에뮬레이터 또는 실기기 선택
-# 3) Run 'app' 실행
-```
-
-- CLI로 설치/실행
-```bash
-# APK 빌드 + 디버그 기기에 설치
 ./gradlew installDebug
-
-# 앱 실행 (패키지/액티비티 기준)
 adb shell am start -n com.boksl.running/.MainActivity
 ```
 
-- CLI로 AVD 실행
-```bash
-# AVD 목록 확인
-$ANDROID_SDK_ROOT/emulator/emulator -list-avds
+## 문서
 
-# AVD 실행
-$ANDROID_SDK_ROOT/emulator/emulator -avd <AVD_NAME> -no-snapshot-load
+- 요구사항: [docs/PRD.md](./docs/PRD.md)
+- 사용자 흐름: [docs/storyboard.md](./docs/storyboard.md)
+- 구현 계획: [docs/implementation-plan.md](./docs/implementation-plan.md)
+- 기술 스택: [docs/tech-stack.md](./docs/tech-stack.md)
+- 로컬 환경 설정: [docs/dev-setup.md](./docs/dev-setup.md)
+- 상세 명령어: [docs/commands.md](./docs/commands.md)
 
-# 부팅 완료 대기/확인
-adb wait-for-device
-adb shell getprop sys.boot_completed
-```
+## 스크린샷
 
-## Lint / 정적 분석
+![메인화면](./docs/images/main.png)
 
-- Android Lint
-```bash
-./gradlew lint
-```
+![달리기](./docs/images/running.png)
 
-- Ktlint 검사
-```bash
-./gradlew ktlintCheck
-```
-
-- Detekt 검사
-```bash
-./gradlew detekt
-```
-
-- 품질 게이트(권장)
-```bash
-./gradlew lint ktlintCheck detekt
-```
-
-## 컴파일
-
-- Debug Kotlin 컴파일
-```bash
-./gradlew compileDebugKotlin
-```
-
-- Release Kotlin 컴파일
-```bash
-./gradlew compileReleaseKotlin
-```
-
-## 빌드
-
-- Debug APK 생성
-```bash
-./gradlew assembleDebug
-```
-
-- Release APK 생성
-```bash
-./gradlew assembleRelease
-```
-
-- 전체 빌드(+테스트)
-```bash
-./gradlew build
-```
-
-## 테스트
-
-- Unit Test (Debug)
-```bash
-./gradlew testDebugUnitTest
-```
-
-- 계측 테스트(디바이스/에뮬레이터 필요)
-```bash
-./gradlew connectedDebugAndroidTest
-```
-
-## 러닝 시뮬레이션
-
-- 에뮬레이터에서 앱 설치/실행 후 `러닝 준비` 화면까지 진입
-- `adb` 기반 경로 재생:
-```bash
-./scripts/simulate_run.sh
-```
-
-- 재생 속도 배속:
-```bash
-./scripts/simulate_run.sh --speed 2.0
-```
-
-- 특정 에뮬레이터 지정:
-```bash
-./scripts/simulate_run.sh --serial emulator-5554
-```
-
-- 샘플 경로 파일:
-  - CSV: `tools/simulation/sample_run_loop.csv`
-  - GPX: `tools/simulation/sample_run_loop.gpx`
-
-- Android Studio 에뮬레이터 수동 재생:
-  - `Extended controls > Location > Routes`에서 `tools/simulation/sample_run_loop.gpx` 선택
+![통계](./docs/images/state.png)
