@@ -12,6 +12,8 @@ import com.boksl.running.domain.repository.RunEngineRepository
 import com.boksl.running.domain.repository.RunningRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +36,14 @@ class RunSessionViewModel
         networkMonitor: NetworkMonitor,
     ) : ViewModel() {
         private val isStarting = MutableStateFlow(false)
-        private val activeRun = runEngineRepository.observeActiveRun()
+        private val countdownRemainingSeconds = MutableStateFlow<Int?>(null)
+        private var startCountdownJob: Job? = null
+        private val activeRun =
+            runEngineRepository.observeActiveRun().stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STATE_SUBSCRIPTION_TIMEOUT_MILLIS),
+                initialValue = null,
+            )
         private val sessionIdFlow =
             activeRun
                 .map { it?.sessionId }
@@ -60,20 +69,25 @@ class RunSessionViewModel
 
         val uiState: StateFlow<RunSessionUiState> =
             combine(
-                activeRun,
-                sessionFlow,
-                trackPointsFlow,
-                networkMonitor.observeIsOnline(),
-                isStarting,
-            ) { snapshot, savedSession, trackPoints, isOnline, starting ->
-                val pointsWithLatest = appendLatestLocation(trackPoints, snapshot)
-                RunSessionUiState(
-                    snapshot = snapshot,
-                    isStarting = starting,
-                    savedSession = savedSession,
-                    trackPoints = pointsWithLatest,
-                    isOffline = !isOnline,
-                )
+                combine(
+                    activeRun,
+                    sessionFlow,
+                    trackPointsFlow,
+                    networkMonitor.observeIsOnline(),
+                    isStarting,
+                ) { snapshot, savedSession, trackPoints, isOnline, starting ->
+                    val pointsWithLatest = appendLatestLocation(trackPoints, snapshot)
+                    RunSessionUiState(
+                        snapshot = snapshot,
+                        isStarting = starting,
+                        savedSession = savedSession,
+                        trackPoints = pointsWithLatest,
+                        isOffline = !isOnline,
+                    )
+                },
+                countdownRemainingSeconds,
+            ) { baseState, countdown ->
+                baseState.copy(countdownRemainingSeconds = countdown)
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(STATE_SUBSCRIPTION_TIMEOUT_MILLIS),
@@ -87,12 +101,22 @@ class RunSessionViewModel
         }
 
         fun startRun() {
-            viewModelScope.launch {
-                if (isStarting.value) return@launch
-                isStarting.value = true
-                runEngineRepository.startRun()
-                isStarting.value = false
-            }
+            if (startCountdownJob?.isActive == true || isStarting.value) return
+            if (activeRun.value?.state != RunEngineState.READY) return
+
+            startCountdownJob =
+                viewModelScope.launch {
+                    try {
+                        for (remaining in RUN_START_COUNTDOWN_SECONDS downTo 1) {
+                            countdownRemainingSeconds.value = remaining
+                            delay(RUN_START_COUNTDOWN_INTERVAL_MILLIS)
+                        }
+                        startRunImmediately()
+                    } finally {
+                        countdownRemainingSeconds.value = null
+                        startCountdownJob = null
+                    }
+                }
         }
 
         fun requestStop() {
@@ -114,6 +138,7 @@ class RunSessionViewModel
         }
 
         fun discardRun() {
+            cancelStartCountdown()
             viewModelScope.launch {
                 runEngineRepository.discardRun()
             }
@@ -124,11 +149,29 @@ class RunSessionViewModel
                 runEngineRepository.resumeActiveRun()
             }
         }
+
+        private suspend fun startRunImmediately() {
+            if (isStarting.value || activeRun.value?.state != RunEngineState.READY) return
+
+            isStarting.value = true
+            try {
+                runEngineRepository.startRun()
+            } finally {
+                isStarting.value = false
+            }
+        }
+
+        private fun cancelStartCountdown() {
+            startCountdownJob?.cancel()
+            startCountdownJob = null
+            countdownRemainingSeconds.value = null
+        }
     }
 
 data class RunSessionUiState(
     val snapshot: RunSnapshot? = null,
     val isStarting: Boolean = false,
+    val countdownRemainingSeconds: Int? = null,
     val savedSession: RunningSession? = null,
     val trackPoints: List<TrackPoint> = emptyList(),
     val isOffline: Boolean = false,
@@ -139,8 +182,11 @@ data class RunSessionUiState(
     val showStopConfirm: Boolean
         get() = snapshot?.state == RunEngineState.STOP_CONFIRM
 
+    val isCountingDown: Boolean
+        get() = countdownRemainingSeconds != null
+
     val canStart: Boolean
-        get() = snapshot?.state == RunEngineState.READY && !isStarting
+        get() = snapshot?.state == RunEngineState.READY && !isStarting && !isCountingDown
 }
 
 private fun appendLatestLocation(
@@ -174,3 +220,5 @@ private fun TrackPoint?.isSameLocationAs(latest: LocationSample): Boolean =
         recordedAtEpochMillis == latest.recordedAtEpochMillis
 
 private const val STATE_SUBSCRIPTION_TIMEOUT_MILLIS = 5_000L
+private const val RUN_START_COUNTDOWN_SECONDS = 3
+private const val RUN_START_COUNTDOWN_INTERVAL_MILLIS = 1_000L

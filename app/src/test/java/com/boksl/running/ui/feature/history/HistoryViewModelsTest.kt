@@ -362,6 +362,9 @@ private class FakeRunningRepository(
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 
+    override fun observeSavedSessionCount(): Flow<Int> =
+        sessionsState.map { sessions -> sessions.count { it.status == SessionStatus.SAVED } }
+
     override fun observeSession(sessionId: Long): Flow<RunningSession?> =
         sessionsState.map { sessions -> sessions.firstOrNull { it.id == sessionId } }
 

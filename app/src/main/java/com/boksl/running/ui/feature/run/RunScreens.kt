@@ -50,6 +50,20 @@ fun runReadyScreen(
     onCancel: () -> Unit,
 ) {
     val currentLocation = uiState.snapshot?.latestLocation?.let { LatLng(it.latitude, it.longitude) }
+    val readyMessage =
+        when {
+            uiState.isStarting -> "기록을 시작하는 중입니다"
+            uiState.isCountingDown ->
+                "${uiState.countdownRemainingSeconds ?: 0}초 후 기록을 시작합니다"
+            uiState.canStart -> "버튼을 누르면 3초 카운트다운 후 기록을 시작합니다"
+            else -> "위치를 준비하는 중입니다"
+        }
+    val startButtonText =
+        when {
+            uiState.isStarting -> "시작 중..."
+            uiState.isCountingDown -> "${uiState.countdownRemainingSeconds ?: 0}"
+            else -> "달리기 시작"
+        }
 
     runScreenLayout(title = "달리기 준비") {
         if (uiState.isOffline) {
@@ -77,11 +91,11 @@ fun runReadyScreen(
             )
             runSummaryLine(
                 label = "안내",
-                value = if (uiState.canStart) "버튼을 누르면 기록을 시작합니다" else "위치를 준비하는 중입니다",
+                value = readyMessage,
             )
         }
         AppPrimaryButton(
-            text = if (uiState.isStarting) "시작 중..." else "달리기 시작",
+            text = startButtonText,
             onClick = onStartRun,
             enabled = uiState.canStart,
         )

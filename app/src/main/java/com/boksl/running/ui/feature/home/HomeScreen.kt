@@ -94,7 +94,7 @@ fun homeScreen(
             }
             AppSectionCard(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 AppPrimaryButton(
-                    text = "달리기 시작",
+                    text = "달리기 준비",
                     onClick = actions.onStartRun,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

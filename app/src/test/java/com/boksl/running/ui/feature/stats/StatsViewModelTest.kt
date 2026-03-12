@@ -147,6 +147,8 @@ private class FakeStatsRunningRepository(
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = monthlyStatsState
 
+    override fun observeSavedSessionCount(): Flow<Int> = flowOf(0)
+
     override fun observeSession(sessionId: Long): Flow<RunningSession?> = flowOf(null)
 
     override fun observeSavedSessionsPaged(): Flow<PagingData<RunningSession>> = flowOf(PagingData.empty())

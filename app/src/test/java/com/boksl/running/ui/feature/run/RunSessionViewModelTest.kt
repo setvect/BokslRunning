@@ -21,7 +21,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -153,18 +155,90 @@ class RunSessionViewModelTest {
             assertFalse(uiState.isOffline)
             assertFalse(uiState.shouldNavigateToLive)
         }
+
+    @Test
+    fun startRunWaitsForThreeSecondCountdownBeforeStarting() =
+        runTest {
+            val repository = FakeRunEngineRepository(readySnapshot())
+            val viewModel =
+                RunSessionViewModel(
+                    runEngineRepository = repository,
+                    runningRepository = FakeRunningRepository(session = null, trackPoints = emptyList()),
+                    networkMonitor = FakeNetworkMonitor(isOnline = true),
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            viewModel.startRun()
+            runCurrent()
+
+            assertEquals(3, viewModel.uiState.value.countdownRemainingSeconds)
+            assertTrue(viewModel.uiState.value.isCountingDown)
+            assertFalse(viewModel.uiState.value.canStart)
+            assertEquals(0, repository.startRunCallCount)
+
+            advanceTimeBy(1_000L)
+            runCurrent()
+            assertEquals(2, viewModel.uiState.value.countdownRemainingSeconds)
+            assertEquals(0, repository.startRunCallCount)
+
+            advanceTimeBy(1_000L)
+            runCurrent()
+            assertEquals(1, viewModel.uiState.value.countdownRemainingSeconds)
+            assertEquals(0, repository.startRunCallCount)
+
+            advanceTimeBy(1_000L)
+            runCurrent()
+
+            assertEquals(1, repository.startRunCallCount)
+            assertFalse(viewModel.uiState.value.isCountingDown)
+            assertFalse(viewModel.uiState.value.isStarting)
+        }
+
+    @Test
+    fun discardRunCancelsPendingCountdown() =
+        runTest {
+            val repository = FakeRunEngineRepository(readySnapshot())
+            val viewModel =
+                RunSessionViewModel(
+                    runEngineRepository = repository,
+                    runningRepository = FakeRunningRepository(session = null, trackPoints = emptyList()),
+                    networkMonitor = FakeNetworkMonitor(isOnline = true),
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            viewModel.startRun()
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isCountingDown)
+
+            viewModel.discardRun()
+            runCurrent()
+            advanceTimeBy(3_000L)
+            runCurrent()
+
+            assertEquals(0, repository.startRunCallCount)
+            assertEquals(1, repository.discardRunCallCount)
+            assertFalse(viewModel.uiState.value.isCountingDown)
+        }
 }
 
 private class FakeRunEngineRepository(
     snapshot: RunSnapshot?,
 ) : RunEngineRepository {
     private val activeRun = MutableStateFlow(snapshot)
+    var startRunCallCount = 0
+        private set
+    var discardRunCallCount = 0
+        private set
 
     override fun observeActiveRun(): Flow<RunSnapshot?> = activeRun
 
     override suspend fun prepareRun() = Unit
 
-    override suspend fun startRun() = Unit
+    override suspend fun startRun() {
+        startRunCallCount += 1
+    }
 
     override suspend fun requestStop() = Unit
 
@@ -172,7 +246,9 @@ private class FakeRunEngineRepository(
 
     override suspend fun cancelStop() = Unit
 
-    override suspend fun discardRun() = Unit
+    override suspend fun discardRun() {
+        discardRunCallCount += 1
+    }
 
     override suspend fun resumeActiveRun() = Unit
 }
@@ -187,6 +263,9 @@ private class FakeRunningRepository(
     override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
+
+    override fun observeSavedSessionCount(): Flow<Int> =
+        flowOf(listOfNotNull(sessionState.value).count { it.status == SessionStatus.SAVED })
 
     override fun observeSession(sessionId: Long): Flow<RunningSession?> = sessionState
 
@@ -222,3 +301,19 @@ private class FakeNetworkMonitor(
 
     override fun observeIsOnline(): Flow<Boolean> = isOnlineFlow
 }
+
+private fun readySnapshot(): RunSnapshot =
+    RunSnapshot(
+        state = RunEngineState.READY,
+        sessionId = 11L,
+        startedAtEpochMillis = null,
+        durationMillis = 0L,
+        latestLocation = null,
+        totalDistanceMeters = 0.0,
+        currentPaceSecPerKm = null,
+        averagePaceSecPerKm = null,
+        maxSpeedMps = 0.0,
+        calorieKcal = 0.0,
+        lastFlushAtEpochMillis = 0L,
+        pointCount = 0,
+    )

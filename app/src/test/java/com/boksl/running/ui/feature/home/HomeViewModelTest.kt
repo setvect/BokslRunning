@@ -93,6 +93,8 @@ private class FakeRunningRepository : RunningRepository {
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 
+    override fun observeSavedSessionCount(): Flow<Int> = flowOf(0)
+
     override fun observeSession(sessionId: Long): Flow<RunningSession?> = flowOf(null)
 
     override fun observeSavedSessionsPaged() = flowOf(androidx.paging.PagingData.empty<RunningSession>())

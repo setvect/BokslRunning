@@ -387,7 +387,7 @@ private fun historyEmptyState(
             color = AppUiTokens.TextSecondary,
         )
         AppPrimaryButton(
-            text = "달리기 시작",
+            text = "달리기 준비",
             onClick = onStartRun,
         )
     }
