@@ -2,12 +2,15 @@
 
 package com.boksl.running.ui.feature.run
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -117,7 +121,17 @@ fun runLiveScreen(
     val routePoints = uiState.trackPoints.map { it.toLatLng() }
     val currentLocation = uiState.snapshot?.latestLocation?.let { LatLng(it.latitude, it.longitude) }
 
-    runScreenLayout(title = "달리는 중") {
+    runScreenLayout(
+        title = "달리는 중",
+        floatingBottomAction = {
+            AppPrimaryButton(
+                text = "끝내기",
+                onClick = onRequestStop,
+                containerColor = AppUiTokens.AccentMuted,
+                contentColor = AppUiTokens.Background,
+            )
+        },
+    ) {
         if (uiState.isOffline) {
             runOfflineBanner()
         }
@@ -128,12 +142,6 @@ fun runLiveScreen(
             maxZoom = 16f,
         )
         metricsGrid(snapshot = uiState.snapshot, savedSession = uiState.savedSession)
-        AppPrimaryButton(
-            text = "기록 종료",
-            onClick = onRequestStop,
-            containerColor = AppUiTokens.AccentMuted,
-            contentColor = AppUiTokens.Background,
-        )
     }
 
     if (uiState.showStopConfirm) {
@@ -225,20 +233,41 @@ fun runRecoveryScreen(
 @Composable
 private fun runScreenLayout(
     title: String,
+    floatingBottomAction: (@Composable BoxScope.() -> Unit)? = null,
     body: @Composable ColumnScope.() -> Unit,
 ) {
     Scaffold(containerColor = AppUiTokens.Background) { innerPadding ->
-        Column(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .then(appScreenModifier())
-                    .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(AppUiTokens.ScreenSpacing),
         ) {
-            AppScreenHeader(title = title)
-            body()
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .then(appScreenModifier())
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = if (floatingBottomAction != null) 116.dp else 0.dp),
+                verticalArrangement = Arrangement.spacedBy(AppUiTokens.ScreenSpacing),
+            ) {
+                AppScreenHeader(title = title)
+                body()
+            }
+
+            if (floatingBottomAction != null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(horizontal = AppUiTokens.ScreenHorizontalPadding)
+                            .padding(bottom = AppUiTokens.ScreenTopPadding)
+                            .navigationBarsPadding(),
+                    content = floatingBottomAction,
+                )
+            }
         }
     }
 }
