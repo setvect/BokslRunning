@@ -8,6 +8,7 @@ import com.boksl.running.data.location.LocationRequestConfig
 import com.boksl.running.domain.model.AppPreferences
 import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.HomeSummary
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.LocationSample
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.Profile
@@ -158,7 +159,7 @@ private class FakeRunningRepository(
     val savedTrackPoints = initialTrackPoints
     private var nextSessionId = (sessions.keys.maxOrNull() ?: 0L) + 1L
 
-    override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
+    override fun observeHomeSummary(period: HomeStatsPeriod): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 

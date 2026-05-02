@@ -7,6 +7,7 @@ import com.boksl.running.MainDispatcherRule
 import com.boksl.running.domain.model.AppPreferences
 import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.HomeSummary
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.Profile
 import com.boksl.running.domain.model.RunStats
@@ -358,7 +359,7 @@ private class FakeRunningRepository(
     private val trackPointsState = MutableStateFlow<Map<Long, List<TrackPoint>>>(trackPointsBySessionId)
     val deletedSessionIds = mutableListOf<Long>()
 
-    override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
+    override fun observeHomeSummary(period: HomeStatsPeriod): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 

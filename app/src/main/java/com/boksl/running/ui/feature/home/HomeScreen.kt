@@ -4,17 +4,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.boksl.running.R
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.ui.common.AppHintRow
 import com.boksl.running.ui.common.AppIconActionButton
 import com.boksl.running.ui.common.AppMetricLine
@@ -59,6 +62,10 @@ fun homeScreen(
             )
             AppSectionCard {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    homeStatsPeriodTabs(
+                        selectedPeriod = uiState.selectedStatsPeriod,
+                        onSelectPeriod = actions.onSelectStatsPeriod,
+                    )
                     Text(
                         text = "${uiState.totalDistanceMeters.formatDistanceKm()} km",
                         style = MaterialTheme.typography.headlineLarge,
@@ -66,7 +73,7 @@ fun homeScreen(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "누적 거리",
+                        text = uiState.selectedStatsPeriod.distanceLabel(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppUiTokens.TextSecondary,
                     )
@@ -129,3 +136,41 @@ fun homeScreen(
         )
     }
 }
+
+@Composable
+private fun homeStatsPeriodTabs(
+    selectedPeriod: HomeStatsPeriod,
+    onSelectPeriod: (HomeStatsPeriod) -> Unit,
+) {
+    val periods = remember { HomeStatsPeriod.entries }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        periods.forEach { period ->
+            val isSelected = period == selectedPeriod
+            AppSecondaryButton(
+                text = period.tabLabel(),
+                onClick = { onSelectPeriod(period) },
+                modifier = Modifier.weight(1f),
+                containerColor = if (isSelected) AppUiTokens.Accent else AppUiTokens.Pill,
+                contentColor = if (isSelected) AppUiTokens.Background else AppUiTokens.TextPrimary,
+            )
+        }
+    }
+}
+
+private fun HomeStatsPeriod.tabLabel(): String =
+    when (this) {
+        HomeStatsPeriod.THIS_MONTH -> "이번달"
+        HomeStatsPeriod.THIS_YEAR -> "올해"
+        HomeStatsPeriod.ALL_TIME -> "전체"
+    }
+
+private fun HomeStatsPeriod.distanceLabel(): String =
+    when (this) {
+        HomeStatsPeriod.THIS_MONTH -> "이번달 거리"
+        HomeStatsPeriod.THIS_YEAR -> "올해 거리"
+        HomeStatsPeriod.ALL_TIME -> "누적 거리"
+    }

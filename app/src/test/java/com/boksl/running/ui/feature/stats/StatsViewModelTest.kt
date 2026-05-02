@@ -3,6 +3,7 @@ package com.boksl.running.ui.feature.stats
 import androidx.paging.PagingData
 import com.boksl.running.MainDispatcherRule
 import com.boksl.running.domain.model.HomeSummary
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.StatsChartMetric
@@ -143,7 +144,7 @@ private class FakeStatsRunningRepository(
     private val summaryState = MutableStateFlow(summary)
     private val monthlyStatsState = MutableStateFlow(monthlyStats)
 
-    override fun observeHomeSummary(): Flow<HomeSummary> = summaryState
+    override fun observeHomeSummary(period: HomeStatsPeriod): Flow<HomeSummary> = summaryState
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = monthlyStatsState
 

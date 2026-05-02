@@ -4,6 +4,7 @@ import com.boksl.running.MainDispatcherRule
 import com.boksl.running.domain.model.AppPreferences
 import com.boksl.running.domain.model.Gender
 import com.boksl.running.domain.model.HomeSummary
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.Profile
 import com.boksl.running.domain.model.RunningSession
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -30,6 +32,64 @@ import org.junit.Test
 class HomeViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun uiStateUsesThisMonthAsDefaultStatsPeriod() =
+        runTest {
+            val viewModel =
+                HomeViewModel(
+                    runningRepository =
+                        FakeRunningRepository(
+                            summaries =
+                                mapOf(
+                                    HomeStatsPeriod.THIS_MONTH to HomeSummary(1_200.0, 240_000L, 5.0, 90.0),
+                                    HomeStatsPeriod.THIS_YEAR to HomeSummary(4_500.0, 1_200_000L, 3.75, 260.0),
+                                    HomeStatsPeriod.ALL_TIME to HomeSummary(8_000.0, 2_400_000L, 3.3333333333, 500.0),
+                                ),
+                        ),
+                    profileRepository = FakeProfileRepository(),
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+
+            advanceUntilIdle()
+
+            val uiState = viewModel.uiState.value
+            assertEquals(HomeStatsPeriod.THIS_MONTH, uiState.selectedStatsPeriod)
+            assertEquals(1_200.0, uiState.totalDistanceMeters, 0.0)
+            assertEquals(240_000L, uiState.totalDurationMillis)
+            assertEquals(5.0, uiState.averageSpeedMps, 0.0)
+            assertEquals(90.0, uiState.totalCaloriesKcal, 0.0)
+        }
+
+    @Test
+    fun onStatsPeriodSelectedUpdatesDisplayedSummary() =
+        runTest {
+            val viewModel =
+                HomeViewModel(
+                    runningRepository =
+                        FakeRunningRepository(
+                            summaries =
+                                mapOf(
+                                    HomeStatsPeriod.THIS_MONTH to HomeSummary(1_200.0, 240_000L, 5.0, 90.0),
+                                    HomeStatsPeriod.THIS_YEAR to HomeSummary(4_500.0, 1_200_000L, 3.75, 260.0),
+                                    HomeStatsPeriod.ALL_TIME to HomeSummary(8_000.0, 2_400_000L, 3.3333333333, 500.0),
+                                ),
+                        ),
+                    profileRepository = FakeProfileRepository(),
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+
+            viewModel.onStatsPeriodSelected(HomeStatsPeriod.THIS_YEAR)
+            advanceUntilIdle()
+
+            val uiState = viewModel.uiState.value
+            assertEquals(HomeStatsPeriod.THIS_YEAR, uiState.selectedStatsPeriod)
+            assertEquals(4_500.0, uiState.totalDistanceMeters, 0.0)
+            assertEquals(1_200_000L, uiState.totalDurationMillis)
+            assertEquals(3.75, uiState.averageSpeedMps, 0.0)
+            assertEquals(260.0, uiState.totalCaloriesKcal, 0.0)
+        }
 
     @Test
     fun onRunStartRequestedShowsPermissionDialog() =
@@ -88,8 +148,20 @@ class HomeViewModelTest {
         }
 }
 
-private class FakeRunningRepository : RunningRepository {
-    override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
+private class FakeRunningRepository(
+    summaries: Map<HomeStatsPeriod, HomeSummary> =
+        mapOf(
+            HomeStatsPeriod.THIS_MONTH to HomeSummary(0.0, 0L, 0.0, 0.0),
+            HomeStatsPeriod.THIS_YEAR to HomeSummary(0.0, 0L, 0.0, 0.0),
+            HomeStatsPeriod.ALL_TIME to HomeSummary(0.0, 0L, 0.0, 0.0),
+        ),
+) : RunningRepository {
+    private val summariesState = MutableStateFlow(summaries)
+
+    override fun observeHomeSummary(period: HomeStatsPeriod): Flow<HomeSummary> =
+        summariesState.map { summariesByPeriod ->
+            summariesByPeriod[period] ?: HomeSummary(0.0, 0L, 0.0, 0.0)
+        }
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 

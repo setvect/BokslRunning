@@ -4,13 +4,14 @@ package com.boksl.running.domain.repository
 
 import androidx.paging.PagingData
 import com.boksl.running.domain.model.HomeSummary
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.RunningSession
 import com.boksl.running.domain.model.TrackPoint
 import kotlinx.coroutines.flow.Flow
 
 interface RunningRepository {
-    fun observeHomeSummary(): Flow<HomeSummary>
+    fun observeHomeSummary(period: HomeStatsPeriod = HomeStatsPeriod.ALL_TIME): Flow<HomeSummary>
 
     fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>>
 

@@ -234,6 +234,98 @@ class RunningSessionDaoTest {
         }
 
     @Test
+    fun observeHomeSummaryFiltersByRequestedRange() =
+        runTest {
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-prev-year",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = localEpochMillis(year = 2025, month = 12, dayOfMonth = 31),
+                ).copy(
+                    durationMillis = 300_000L,
+                    distanceMeters = 1_000.0,
+                    calorieKcal = 90.0,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-year-only",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 1, dayOfMonth = 15),
+                ).copy(
+                    durationMillis = 600_000L,
+                    distanceMeters = 2_000.0,
+                    calorieKcal = 150.0,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-month-a",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 1),
+                ).copy(
+                    durationMillis = 450_000L,
+                    distanceMeters = 1_500.0,
+                    calorieKcal = 120.0,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-month-b",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 20),
+                ).copy(
+                    durationMillis = 300_000L,
+                    distanceMeters = 900.0,
+                    calorieKcal = null,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "saved-next-month",
+                    status = SessionStatus.SAVED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 4, dayOfMonth = 1),
+                ).copy(
+                    durationMillis = 900_000L,
+                    distanceMeters = 4_000.0,
+                    calorieKcal = 280.0,
+                ),
+            )
+            runningSessionDao.insert(
+                runningSessionEntity(
+                    externalId = "discarded-month",
+                    status = SessionStatus.DISCARDED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 10),
+                ).copy(
+                    durationMillis = 800_000L,
+                    distanceMeters = 5_000.0,
+                    calorieKcal = 350.0,
+                ),
+            )
+
+            val marchSummary =
+                runningSessionDao
+                    .observeHomeSummary(
+                        fromInclusiveEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 1),
+                        untilExclusiveEpochMillis = localEpochMillis(year = 2026, month = 4, dayOfMonth = 1),
+                    ).first()
+            val yearSummary =
+                runningSessionDao
+                    .observeHomeSummary(
+                        fromInclusiveEpochMillis = localEpochMillis(year = 2026, month = 1, dayOfMonth = 1),
+                        untilExclusiveEpochMillis = localEpochMillis(year = 2027, month = 1, dayOfMonth = 1),
+                    ).first()
+
+            assertEquals(2_400.0, marchSummary?.totalDistanceMeters ?: 0.0, 0.0)
+            assertEquals(750_000L, marchSummary?.totalDurationMillis ?: 0L)
+            assertEquals(120.0, marchSummary?.totalCaloriesKcal ?: 0.0, 0.0)
+
+            assertEquals(8_400.0, yearSummary?.totalDistanceMeters ?: 0.0, 0.0)
+            assertEquals(2_250_000L, yearSummary?.totalDurationMillis ?: 0L)
+            assertEquals(550.0, yearSummary?.totalCaloriesKcal ?: 0.0, 0.0)
+        }
+
+    @Test
     fun observeMonthlyStatsAggregatesSavedSessionsByLocalMonthOnly() =
         runTest {
             runningSessionDao.insert(

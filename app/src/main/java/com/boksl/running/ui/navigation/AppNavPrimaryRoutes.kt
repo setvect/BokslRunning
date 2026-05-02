@@ -206,6 +206,7 @@ internal fun NavGraphBuilder.addHomeRoute(navController: NavHostController) {
                     onOpenHistory = { navController.navigate(AppRoute.History.route) },
                     onOpenStats = { navController.navigate(AppRoute.Stats.route) },
                     onOpenSettings = { navController.navigate(AppRoute.Settings.route) },
+                    onSelectStatsPeriod = viewModel::onStatsPeriodSelected,
                     onDismissPermissionDialog = viewModel::dismissPermissionDialog,
                     onOpenAppSettings = {
                         viewModel.onOpenAppSettingsRequested()

@@ -22,9 +22,15 @@ interface RunningSessionDao {
             SUM(calorie_kcal) AS totalCaloriesKcal
         FROM running_sessions
         WHERE status = :status
+          AND (:fromInclusiveEpochMillis IS NULL OR started_at_epoch_millis >= :fromInclusiveEpochMillis)
+          AND (:untilExclusiveEpochMillis IS NULL OR started_at_epoch_millis < :untilExclusiveEpochMillis)
         """,
     )
-    fun observeHomeSummary(status: SessionStatus = SessionStatus.SAVED): Flow<HomeSummaryProjection?>
+    fun observeHomeSummary(
+        status: SessionStatus = SessionStatus.SAVED,
+        fromInclusiveEpochMillis: Long? = null,
+        untilExclusiveEpochMillis: Long? = null,
+    ): Flow<HomeSummaryProjection?>
 
     @Query(
         """

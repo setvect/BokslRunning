@@ -2,6 +2,7 @@ package com.boksl.running.ui.feature.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.StatsChartMetric
 import com.boksl.running.domain.repository.RunningRepository
@@ -24,7 +25,7 @@ class StatsViewModel
 
         val uiState: StateFlow<StatsUiState> =
             combine(
-                runningRepository.observeHomeSummary(),
+                runningRepository.observeHomeSummary(HomeStatsPeriod.ALL_TIME),
                 runningRepository.observeMonthlyStats(),
                 selectedMetric,
                 selectedMonthIndex,

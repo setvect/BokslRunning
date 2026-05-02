@@ -7,6 +7,7 @@ import androidx.paging.testing.asSnapshot
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.boksl.running.data.local.db.AppDatabase
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.RunStats
 import com.boksl.running.domain.model.RunningSession
@@ -256,6 +257,86 @@ class RunningRepositoryTest {
         }
 
     @Test
+    fun observeHomeSummaryFiltersByHomeStatsPeriod() =
+        runTest {
+            repository.insertSession(
+                savedSession(
+                    externalId = "saved-prev-year",
+                    startedAtEpochMillis = localEpochMillis(year = 2025, month = 12, dayOfMonth = 31),
+                    durationMillis = 300_000L,
+                    distanceMeters = 1_000.0,
+                    calorieKcal = 90.0,
+                ),
+            )
+            repository.insertSession(
+                savedSession(
+                    externalId = "saved-year-only",
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 1, dayOfMonth = 15),
+                    durationMillis = 600_000L,
+                    distanceMeters = 2_000.0,
+                    calorieKcal = 150.0,
+                ),
+            )
+            repository.insertSession(
+                savedSession(
+                    externalId = "saved-month-a",
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 1),
+                    durationMillis = 450_000L,
+                    distanceMeters = 1_500.0,
+                    calorieKcal = 120.0,
+                ),
+            )
+            repository.insertSession(
+                savedSession(
+                    externalId = "saved-month-b",
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 20),
+                    durationMillis = 300_000L,
+                    distanceMeters = 900.0,
+                    calorieKcal = null,
+                ),
+            )
+            repository.insertSession(
+                savedSession(
+                    externalId = "saved-next-month",
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 4, dayOfMonth = 1),
+                    durationMillis = 900_000L,
+                    distanceMeters = 4_000.0,
+                    calorieKcal = 280.0,
+                ),
+            )
+            repository.insertSession(
+                RunningSession(
+                    externalId = "discarded-month",
+                    status = SessionStatus.DISCARDED,
+                    startedAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 10),
+                    endedAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 10) + 800_000L,
+                    stats = RunStats(800_000L, 5_000.0, 160.0, 7.0, 350.0),
+                    createdAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 10),
+                    updatedAtEpochMillis = localEpochMillis(year = 2026, month = 3, dayOfMonth = 10) + 800_000L,
+                ),
+            )
+
+            val monthSummary = repository.observeHomeSummary(HomeStatsPeriod.THIS_MONTH).first()
+            val yearSummary = repository.observeHomeSummary(HomeStatsPeriod.THIS_YEAR).first()
+            val allTimeSummary = repository.observeHomeSummary(HomeStatsPeriod.ALL_TIME).first()
+
+            assertEquals(2_400.0, monthSummary.totalDistanceMeters, 0.0)
+            assertEquals(750_000L, monthSummary.totalDurationMillis)
+            assertEquals(3.2, monthSummary.averageSpeedMps, 0.000001)
+            assertEquals(120.0, monthSummary.totalCaloriesKcal, 0.0)
+
+            assertEquals(8_400.0, yearSummary.totalDistanceMeters, 0.0)
+            assertEquals(2_250_000L, yearSummary.totalDurationMillis)
+            assertEquals(3.7333333333333334, yearSummary.averageSpeedMps, 0.000001)
+            assertEquals(550.0, yearSummary.totalCaloriesKcal, 0.0)
+
+            assertEquals(9_400.0, allTimeSummary.totalDistanceMeters, 0.0)
+            assertEquals(2_550_000L, allTimeSummary.totalDurationMillis)
+            assertEquals(3.6862745098039214, allTimeSummary.averageSpeedMps, 0.000001)
+            assertEquals(640.0, allTimeSummary.totalCaloriesKcal, 0.0)
+        }
+
+    @Test
     fun observeSavedSessionsPagedReturnsSavedOnlyInStartedAtDescendingOrder() =
         runTest {
             repository.insertSession(
@@ -450,13 +531,14 @@ class RunningRepositoryTest {
         startedAtEpochMillis: Long,
         durationMillis: Long,
         distanceMeters: Double,
+        calorieKcal: Double? = null,
     ): RunningSession =
         RunningSession(
             externalId = externalId,
             status = SessionStatus.SAVED,
             startedAtEpochMillis = startedAtEpochMillis,
             endedAtEpochMillis = startedAtEpochMillis + durationMillis,
-            stats = RunStats(durationMillis, distanceMeters, 300.0, 4.0, null),
+            stats = RunStats(durationMillis, distanceMeters, 300.0, 4.0, calorieKcal),
             createdAtEpochMillis = startedAtEpochMillis,
             updatedAtEpochMillis = startedAtEpochMillis + durationMillis,
         )

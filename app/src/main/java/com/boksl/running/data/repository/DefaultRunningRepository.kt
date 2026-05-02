@@ -12,6 +12,7 @@ import com.boksl.running.data.local.db.dao.TrackPointDao
 import com.boksl.running.data.mapper.toDomain
 import com.boksl.running.data.mapper.toEntity
 import com.boksl.running.domain.model.HomeSummary
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.RunStats
 import com.boksl.running.domain.model.RunningSession
@@ -24,7 +25,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.Clock
+import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,11 +43,17 @@ class DefaultRunningRepository
         @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val clock: Clock,
     ) : RunningRepository {
-        override fun observeHomeSummary(): Flow<HomeSummary> =
-            runningSessionDao
-                .observeHomeSummary()
+        override fun observeHomeSummary(period: HomeStatsPeriod): Flow<HomeSummary> {
+            val epochRange = period.toEpochRange(clock)
+
+            return runningSessionDao
+                .observeHomeSummary(
+                    fromInclusiveEpochMillis = epochRange.fromInclusiveEpochMillis,
+                    untilExclusiveEpochMillis = epochRange.untilExclusiveEpochMillis,
+                )
                 .map { projection -> projection.toHomeSummary() }
                 .flowOn(ioDispatcher)
+        }
 
         override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> =
             runningSessionDao
@@ -249,6 +259,42 @@ private fun List<MonthlyStatsProjection>.toMonthlyStats(currentMonth: YearMonth)
 
 private fun YearMonth.monthsUntilInclusive(other: YearMonth): Int =
     ((other.year - year) * MONTHS_PER_YEAR + other.monthValue - monthValue) + INCLUSIVE_MONTH_OFFSET
+
+private data class EpochMillisRange(
+    val fromInclusiveEpochMillis: Long?,
+    val untilExclusiveEpochMillis: Long?,
+)
+
+private fun HomeStatsPeriod.toEpochRange(
+    clock: Clock,
+    zoneId: ZoneId = ZoneId.systemDefault(),
+): EpochMillisRange {
+    val now = Instant.now(clock).atZone(zoneId)
+
+    return when (this) {
+        HomeStatsPeriod.THIS_MONTH -> {
+            val fromInclusive = YearMonth.from(now).atDay(1).atStartOfDay(zoneId)
+            EpochMillisRange(
+                fromInclusiveEpochMillis = fromInclusive.toInstant().toEpochMilli(),
+                untilExclusiveEpochMillis = fromInclusive.plusMonths(1).toInstant().toEpochMilli(),
+            )
+        }
+
+        HomeStatsPeriod.THIS_YEAR -> {
+            val fromInclusive = LocalDate.of(now.year, 1, 1).atStartOfDay(zoneId)
+            EpochMillisRange(
+                fromInclusiveEpochMillis = fromInclusive.toInstant().toEpochMilli(),
+                untilExclusiveEpochMillis = fromInclusive.plusYears(1).toInstant().toEpochMilli(),
+            )
+        }
+
+        HomeStatsPeriod.ALL_TIME ->
+            EpochMillisRange(
+                fromInclusiveEpochMillis = null,
+                untilExclusiveEpochMillis = null,
+            )
+    }
+}
 
 private const val MINIMUM_MONTH_COUNT = 6
 private const val MILLIS_PER_SECOND = 1_000.0

@@ -6,6 +6,7 @@ import androidx.paging.PagingData
 import com.boksl.running.MainDispatcherRule
 import com.boksl.running.core.network.NetworkMonitor
 import com.boksl.running.domain.model.HomeSummary
+import com.boksl.running.domain.model.HomeStatsPeriod
 import com.boksl.running.domain.model.LocationSample
 import com.boksl.running.domain.model.MonthlyStatsPoint
 import com.boksl.running.domain.model.RunEngineState
@@ -260,7 +261,7 @@ private class FakeRunningRepository(
     private val sessionState = MutableStateFlow(session)
     private val trackPointsState = MutableStateFlow(trackPoints)
 
-    override fun observeHomeSummary(): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
+    override fun observeHomeSummary(period: HomeStatsPeriod): Flow<HomeSummary> = flowOf(HomeSummary(0.0, 0L, 0.0, 0.0))
 
     override fun observeMonthlyStats(): Flow<List<MonthlyStatsPoint>> = flowOf(emptyList())
 
