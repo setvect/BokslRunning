@@ -70,6 +70,8 @@ Debug APK 생성:
 ./gradlew assembleDebug
 ```
 
+저장위치: app/build/outputs/apk/debug/
+
 Release APK 생성:
 
 ```bash
