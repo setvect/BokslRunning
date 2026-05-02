@@ -129,7 +129,7 @@ class DefaultRunEngineRepository
                 val currentState = activeRunState.value ?: return
                 if (currentState.state != RunEngineState.RUNNING) return
 
-                flushPendingLocked(forceTimestamp = now())
+                flushSessionLocked(forceTimestamp = now())
                 val flushedState = activeRunState.value ?: currentState
                 activeRunState.value = flushedState.copy(state = RunEngineState.STOP_CONFIRM)
                 stopTrackingService()
@@ -143,7 +143,7 @@ class DefaultRunEngineRepository
                 if (currentState.state != RunEngineState.STOP_CONFIRM) return
 
                 val finishedAt = now()
-                flushPendingLocked(forceTimestamp = finishedAt)
+                flushSessionLocked(forceTimestamp = finishedAt)
                 val savedState = activeRunState.value ?: currentState
                 runningRepository.updateSession(
                     savedState.toRunningSession(
@@ -184,7 +184,7 @@ class DefaultRunEngineRepository
                 val sessionId = currentState.sessionId
                 if (sessionId != null) {
                     val discardedAt = now()
-                    flushPendingLocked(forceTimestamp = discardedAt)
+                    flushSessionLocked(forceTimestamp = discardedAt)
                     runningRepository.updateSession(
                         (activeRunState.value ?: currentState).toRunningSession(
                             status = SessionStatus.DISCARDED,
@@ -207,6 +207,20 @@ class DefaultRunEngineRepository
                     startTrackingService()
                     ensureTicker()
                 }
+            }
+        }
+
+        suspend fun flushActiveSession() {
+            stateMutex.withLock {
+                val currentState = activeRunState.value ?: return
+                if (currentState.state != RunEngineState.RUNNING &&
+                    currentState.state != RunEngineState.STOP_CONFIRM
+                ) {
+                    return
+                }
+                if (currentState.sessionId == null || currentState.startedAtEpochMillis == null) return
+
+                flushSessionLocked(forceTimestamp = now())
             }
         }
 
@@ -247,7 +261,6 @@ class DefaultRunEngineRepository
                             pointCount = pointCount,
                             lastLocationSample = lastSample,
                             recentSamples = trackPoints.takeLast(RECENT_SAMPLE_LIMIT).map { it.toLocationSample() },
-                            pendingTrackPoints = emptyList(),
                             externalId = activeSession.externalId,
                             createdAtEpochMillis = activeSession.createdAtEpochMillis,
                         )
@@ -292,6 +305,7 @@ class DefaultRunEngineRepository
                 }
 
             val trackPoint = sample.toTrackPoint(sessionId = sessionId, pointCount = pointCount)
+            runningRepository.insertTrackPoints(listOf(trackPoint))
 
             activeRunState.value =
                 currentState.copy(
@@ -305,7 +319,6 @@ class DefaultRunEngineRepository
                     pointCount = pointCount,
                     lastLocationSample = sample,
                     recentSamples = recentSamples,
-                    pendingTrackPoints = currentState.pendingTrackPoints + trackPoint,
                 )
         }
 
@@ -368,7 +381,7 @@ class DefaultRunEngineRepository
 
                                     val lastFlushAt = activeRunState.value?.lastFlushAtEpochMillis ?: now
                                     if (now - lastFlushAt >= FLUSH_INTERVAL_MILLIS) {
-                                        flushPendingLocked(forceTimestamp = now)
+                                        flushSessionLocked(forceTimestamp = now)
                                     }
                                 }
                             }
@@ -383,11 +396,8 @@ class DefaultRunEngineRepository
             tickerJob = null
         }
 
-        private suspend fun flushPendingLocked(forceTimestamp: Long) {
+        private suspend fun flushSessionLocked(forceTimestamp: Long) {
             val currentState = activeRunState.value ?: return
-            if (currentState.pendingTrackPoints.isNotEmpty()) {
-                runningRepository.insertTrackPoints(currentState.pendingTrackPoints)
-            }
             runningRepository.updateSession(
                 currentState.toRunningSession(
                     status = SessionStatus.IN_PROGRESS,
@@ -397,7 +407,6 @@ class DefaultRunEngineRepository
             )
             activeRunState.value =
                 currentState.copy(
-                    pendingTrackPoints = emptyList(),
                     lastFlushAtEpochMillis = forceTimestamp,
                 )
         }
@@ -458,7 +467,6 @@ private data class ActiveRunState(
     val pointCount: Int,
     val lastLocationSample: LocationSample?,
     val recentSamples: List<LocationSample> = emptyList(),
-    val pendingTrackPoints: List<TrackPoint> = emptyList(),
     val externalId: String,
     val createdAtEpochMillis: Long?,
 )

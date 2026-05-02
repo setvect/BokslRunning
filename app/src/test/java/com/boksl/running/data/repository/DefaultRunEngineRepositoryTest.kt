@@ -38,6 +38,35 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultRunEngineRepositoryTest {
     @Test
+    fun locationSamplesArePersistedImmediatelyBeforeStopOrSave() =
+        runTest {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val runningRepository = FakeRunningRepository()
+            val repository =
+                DefaultRunEngineRepository(
+                    runningRepository = runningRepository,
+                    profileRepository = FakeProfileRepository(),
+                    locationClient = FakeLocationClient(),
+                    serviceController = FakeRunTrackingServiceController(),
+                    ioDispatcher = dispatcher,
+                )
+
+            repository.prepareRun()
+            repository.startRun()
+            val sessionId = runningRepository.sessions.keys.single()
+
+            assertEquals(1, runningRepository.savedTrackPoints.getValue(sessionId).size)
+
+            repository.onLocationSample(locationSample(37.0003, 127.0, 2_000L))
+
+            val savedPoints = runningRepository.savedTrackPoints.getValue(sessionId)
+            assertEquals(2, savedPoints.size)
+            assertEquals(1, savedPoints.last().sequence)
+            assertEquals(37.0003, savedPoints.last().latitude, 0.0)
+            repository.shutdown()
+        }
+
+    @Test
     fun startStopAndSaveRunUpdatesStateAndPersistsTrackPoints() =
         runTest {
             val dispatcher = StandardTestDispatcher(testScheduler)
@@ -69,6 +98,46 @@ class DefaultRunEngineRepositoryTest {
             assertTrue(serviceController.startCount >= 1)
             assertTrue(serviceController.stopCount >= 1)
             repository.shutdown()
+        }
+
+    @Test
+    fun resumeActiveRunRecoversImmediatelyPersistedTrackPoints() =
+        runTest {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val runningRepository = FakeRunningRepository()
+            val firstRepository =
+                DefaultRunEngineRepository(
+                    runningRepository = runningRepository,
+                    profileRepository = FakeProfileRepository(),
+                    locationClient = FakeLocationClient(),
+                    serviceController = FakeRunTrackingServiceController(),
+                    ioDispatcher = dispatcher,
+                )
+
+            firstRepository.prepareRun()
+            firstRepository.startRun()
+            firstRepository.onLocationSample(locationSample(37.0003, 127.0, 2_000L))
+            firstRepository.onLocationSample(locationSample(37.0009, 127.0, 7_000L))
+            firstRepository.shutdown()
+
+            val resumedRepository =
+                DefaultRunEngineRepository(
+                    runningRepository = runningRepository,
+                    profileRepository = FakeProfileRepository(),
+                    locationClient = FakeLocationClient(),
+                    serviceController = FakeRunTrackingServiceController(),
+                    ioDispatcher = dispatcher,
+                )
+
+            resumedRepository.resumeActiveRun()
+            runCurrent()
+
+            val snapshot = resumedRepository.observeActiveRun().first()
+            assertNotNull(snapshot)
+            assertEquals(RunEngineState.RUNNING, snapshot?.state)
+            assertEquals(3, snapshot?.pointCount)
+            assertEquals(37.0009, snapshot?.latestLocation?.latitude ?: 0.0, 0.0)
+            resumedRepository.shutdown()
         }
 
     @Test
