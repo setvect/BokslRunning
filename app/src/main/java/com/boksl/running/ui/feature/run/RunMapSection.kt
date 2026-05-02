@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.boksl.running.BuildConfig
 import com.boksl.running.domain.model.TrackPoint
@@ -43,11 +44,12 @@ fun runMapSection(
     currentLocation: LatLng?,
     routePoints: List<LatLng>,
     modifier: Modifier = Modifier,
+    height: Dp = DEFAULT_MAP_HEIGHT,
     maxZoom: Float = DEFAULT_MAX_ZOOM,
     minZoom: Float = DEFAULT_MIN_ZOOM,
     onTouchActiveChanged: ((Boolean) -> Unit)? = null,
 ) {
-    Card(modifier = modifier.height(260.dp)) {
+    Card(modifier = modifier.height(height)) {
         if (BuildConfig.MAPS_API_KEY.isBlank()) {
             mapFallback(message = "MAPS_API_KEY가 없어서 지도를 표시할 수 없습니다.")
             return@Card
@@ -184,6 +186,7 @@ private fun List<LatLng>.toBoundsOrNull(): LatLngBounds? {
 private const val DEFAULT_LOCATION_ZOOM = 16f
 private const val DEFAULT_MAX_ZOOM = 18f
 private const val DEFAULT_MIN_ZOOM = 12f
+private val DEFAULT_MAP_HEIGHT = 260.dp
 private const val MAP_PADDING_PX = 96
 
 @Composable

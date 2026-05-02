@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.boksl.running.domain.model.RunSnapshot
 import com.boksl.running.domain.model.RunningSession
@@ -139,9 +141,14 @@ fun runLiveScreen(
             currentLocation = currentLocation,
             routePoints = routePoints,
             modifier = Modifier.fillMaxWidth(),
+            height = LIVE_MAP_HEIGHT,
             maxZoom = 16f,
         )
-        metricsGrid(snapshot = uiState.snapshot, savedSession = uiState.savedSession)
+        metricsGrid(
+            snapshot = uiState.snapshot,
+            savedSession = uiState.savedSession,
+            compact = true,
+        )
     }
 
     if (uiState.showStopConfirm) {
@@ -236,7 +243,22 @@ private fun runScreenLayout(
     floatingBottomAction: (@Composable BoxScope.() -> Unit)? = null,
     body: @Composable ColumnScope.() -> Unit,
 ) {
-    Scaffold(containerColor = AppUiTokens.Background) { innerPadding ->
+    Scaffold(
+        containerColor = AppUiTokens.Background,
+        bottomBar = {
+            if (floatingBottomAction != null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = AppUiTokens.ScreenHorizontalPadding)
+                            .padding(bottom = AppUiTokens.ScreenTopPadding)
+                            .navigationBarsPadding(),
+                    content = floatingBottomAction,
+                )
+            }
+        },
+    ) { innerPadding ->
         Box(
             modifier =
                 Modifier
@@ -249,24 +271,11 @@ private fun runScreenLayout(
                         .fillMaxSize()
                         .then(appScreenModifier())
                         .verticalScroll(rememberScrollState())
-                        .padding(bottom = if (floatingBottomAction != null) 116.dp else 0.dp),
+                        .padding(bottom = if (floatingBottomAction != null) 6.dp else 0.dp),
                 verticalArrangement = Arrangement.spacedBy(AppUiTokens.ScreenSpacing),
             ) {
                 AppScreenHeader(title = title)
                 body()
-            }
-
-            if (floatingBottomAction != null) {
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(horizontal = AppUiTokens.ScreenHorizontalPadding)
-                            .padding(bottom = AppUiTokens.ScreenTopPadding)
-                            .navigationBarsPadding(),
-                    content = floatingBottomAction,
-                )
             }
         }
     }
@@ -285,8 +294,20 @@ fun runOfflineBanner() {
 private fun metricsGrid(
     snapshot: RunSnapshot?,
     savedSession: RunningSession?,
+    compact: Boolean = false,
 ) {
-    AppSectionCard {
+    val cardPadding =
+        if (compact) {
+            PaddingValues(horizontal = 20.dp, vertical = 18.dp)
+        } else {
+            PaddingValues(AppUiTokens.CardPadding)
+        }
+    val itemSpacing = if (compact) 12.dp else AppUiTokens.CardSpacing
+
+    AppSectionCard(
+        contentPadding = cardPadding,
+        verticalArrangement = Arrangement.spacedBy(itemSpacing),
+    ) {
         Text(
             text = "실시간 지표",
             style = MaterialTheme.typography.titleMedium,
@@ -302,12 +323,14 @@ private fun metricsGrid(
                 value = snapshot?.durationMillis?.formatDurationText() ?: "--:--",
                 modifier = Modifier.weight(1f),
                 accent = AppUiTokens.Accent,
+                compact = compact,
             )
             metricTile(
                 label = "거리",
                 value = "${snapshot?.totalDistanceMeters?.formatDistanceKm() ?: "0.00"} km",
                 modifier = Modifier.weight(1f),
                 accent = AppUiTokens.AccentSecondary,
+                compact = compact,
             )
         }
         Row(
@@ -319,12 +342,14 @@ private fun metricsGrid(
                 value = snapshot?.currentPaceSecPerKm.formatPaceText(),
                 modifier = Modifier.weight(1f),
                 accent = AppUiTokens.AccentMuted,
+                compact = compact,
             )
             metricTile(
                 label = "평균 페이스",
                 value = snapshot?.averagePaceSecPerKm.formatPaceText(),
                 modifier = Modifier.weight(1f),
                 accent = AppUiTokens.Accent,
+                compact = compact,
             )
         }
         Row(
@@ -336,12 +361,14 @@ private fun metricsGrid(
                 value = "${snapshot?.maxSpeedMps?.formatSpeedKmh() ?: "0.00"} km/h",
                 modifier = Modifier.weight(1f),
                 accent = AppUiTokens.AccentSecondary,
+                compact = compact,
             )
             metricTile(
                 label = "칼로리",
                 value = (snapshot?.calorieKcal ?: savedSession?.stats?.calorieKcal).formatCaloriesText(),
                 modifier = Modifier.weight(1f),
                 accent = AppUiTokens.AccentMuted,
+                compact = compact,
             )
         }
     }
@@ -389,6 +416,7 @@ private fun metricTile(
     value: String,
     accent: Color,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
 ) {
     Card(
         modifier = modifier,
@@ -397,8 +425,8 @@ private fun metricTile(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(if (compact) 12.dp else 16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp),
         ) {
             Text(
                 text = label,
@@ -414,6 +442,8 @@ private fun metricTile(
         }
     }
 }
+
+private val LIVE_MAP_HEIGHT: Dp = 220.dp
 
 @Composable
 private fun runSummaryLine(
