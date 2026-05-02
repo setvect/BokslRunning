@@ -8,12 +8,13 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,6 +33,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.boksl.running.R
 
 object AppUiTokens {
@@ -334,28 +337,90 @@ fun AppDialog(
     dismissText: String = "취소",
     confirmColor: Color = AppUiTokens.TextPrimary,
 ) {
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        containerColor = AppUiTokens.Dialog,
-        shape = RoundedCornerShape(26.dp),
-        titleContentColor = AppUiTokens.TextPrimary,
-        textContentColor = AppUiTokens.TextSecondary,
-        title = { Text(text = title) },
-        text = { Text(text = message) },
-        confirmButton = {
-            AppTextAction(
-                text = confirmText,
-                onClick = onConfirm,
-                color = confirmColor,
-            )
-        },
-        dismissButton = {
-            AppTextAction(
-                text = dismissText,
-                onClick = onDismiss,
-            )
-        },
-    )
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Card(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 520.dp),
+                shape = RoundedCornerShape(26.dp),
+                colors = CardDefaults.cardColors(containerColor = AppUiTokens.Dialog),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(28.dp),
+                    verticalArrangement = Arrangement.spacedBy(22.dp),
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = AppUiTokens.TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppUiTokens.TextSecondary,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        dialogActionButton(
+                            text = dismissText,
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f),
+                            containerColor = AppUiTokens.Pill,
+                            contentColor = AppUiTokens.TextPrimary,
+                        )
+                        dialogActionButton(
+                            text = confirmText,
+                            onClick = onConfirm,
+                            modifier = Modifier.weight(1f),
+                            containerColor = confirmColor,
+                            contentColor = AppUiTokens.Background,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun dialogActionButton(
+    text: String,
+    onClick: () -> Unit,
+    containerColor: Color,
+    contentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(56.dp),
+        shape = RoundedCornerShape(AppUiTokens.SecondaryButtonRadius),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = containerColor,
+                contentColor = contentColor,
+            ),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+    }
 }
 
 @Composable
